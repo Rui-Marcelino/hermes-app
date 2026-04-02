@@ -1,93 +1,81 @@
 # Hermes Web Dashboard (hermes-app)
 
-![Hermes Web Dashboard Screenshot](https://raw.githubusercontent.com/Rui-Marcelino/hermes-app/master/docs/screenshot.png)
-(placeholder for screenshot soon)
+## 🌌 A Web UI Companion for Hermes Agent
 
-A self-hosted web dashboard companion for [Hermes Agent](https://github.com/NousResearch/hermes-agent), providing a clean browser UI for managing and interacting with your Hermes Agent instance.
+`hermes-app` is a self-hosted web dashboard designed to provide a graphical user interface for interacting with and managing your Hermes Agent. It aims to make agent interaction, monitoring, and configuration more intuitive and accessible, especially for users who prefer a browser-based workflow over a pure command-line interface.
 
-## ✨ Features
+Inspired by robust multi-agent systems like `neo-app` and `jarbas-app`, this dashboard brings observability and control to your Hermes Agent.
 
-### Core Interaction & Monitoring
+---
 
--   **Dashboard:** Real-time system monitor for CPU, memory, disk, network, with live charts and service health indicators.
--   **Chat:** Interact with your Hermes Agent through a browser-based chat interface. Supports persistent named conversations and auto-scrolling to the latest messages.
--   **Sessions:** View, manage, and resume all past Hermes Agent conversations. Detailed history including token usage, message count, and session size.
--   **Diary:** A personal journal for daily notes, insights, and tracking, stored as markdown files.
--   **Scripts:** Run and monitor your custom scripts directly from the browser with one-click execution and live log viewing. Includes configurable backup scripts.
+## 💡 Core Value Proposition
 
-### Management & Configuration
+`hermes-app` gives you a clean, real-time browser UI for everything that's often less convenient in a terminal, running on your local machine and accessible from any device on your network.
 
--   **Cron Jobs** (Planned): Visual management for scheduled Hermes tasks.
--   **Skills** (Planned): Browse and manage installed Hermes Agent skills from the browser.
--   **Config** (Planned): Edit `config.yaml` settings via a friendly UI.
+---
 
-### Unique Value Proposition
+## ✨ Key Features
 
--   **Browser-based accessibility:** Control Hermes from any device on your network without needing SSH or a terminal.
--   **Persistent Conversations:** Named chat sessions that remain accessible and resumable, even if the browser closes.
--   **One-click Actions:** Simplified execution of frequently used scripts and management tasks.
--   **System Visibility:** Centralized view of Hermes Agent status and system health.
+### Agent Interaction & Sessions
+- **💬 Chat Panel**: Engage with your Hermes Agent through a dynamic chat interface. Supports persistent named conversations that survive browser closes, with auto-scrolling to the latest messages.
+- **📋 Sessions Viewer**: Browse a full history of all your Hermes conversations. Filter by origin (CLI, Telegram, Cron, Web), view token usage, message count, and size. Easily resume any past session.
+- **📓 Diary**: Maintain a personal journal with entries categorized by date and content, stored as Markdown files.
+- **🛠️ Scripts Orchestrator**: Run and monitor your defined scripts directly from the browser. Features one-click execution, live log viewing, and configurable backup destinations.
+
+### System Monitoring & Management
+- **📊 Dashboard**: A real-time system monitor displaying CPU, memory, disk, and network usage, complemented by live charts for historical data. Keep an eye on Hermes Agent service health and overall system performance.
+- **⏰ Cron Jobs (Planned)**: A dedicated interface for visual management of scheduled Hermes jobs, allowing for easy creation, pausing, resuming, and monitoring.
+- **🧩 Skills Management (Planned)**: Browse and manage your installed Hermes skills via the browser.
+- **⚙️ Config Editor (Planned)**: Edit `config.yaml` settings through a user-friendly web interface.
+
+---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+To get `hermes-app` up and running:
 
--   [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed and running.
--   Python 3.8+.
-
-### Installation
-
-1.  **Clone the repository:**
+1.  **Clone this repository**:
     ```bash
     git clone https://github.com/Rui-Marcelino/hermes-app.git
     cd hermes-app
     ```
-
-2.  **Set up Python environment:**
+2.  **Install Python dependencies**:
     ```bash
-    python3 -m venv venv
-    source venv/bin/activate
     pip install -r requirements.txt
     ```
-
-3.  **Run the server:**
+3.  **Run the application**:
     ```bash
     ./start.sh
-    # or python server.py
     ```
+    This will start the Flask server, typically accessible at `http://localhost:6080`.
 
-    The dashboard will be available at `http://localhost:5000` (or `http://your-machine-ip:5000`).
-
-### Running as a Systemd Service (Recommended)
-
-For persistent operation, you can set `hermes-app` up as a systemd service. An example `hermes-app.service` file is included, which you can adapt and place in `/etc/systemd/system/`.
-
-```bash
-# Example (adapt paths as needed)
-# sudo cp hermes-app.service /etc/systemd/system/
-# sudo systemctl enable hermes-app.service
-# sudo systemctl start hermes-app.service
-# sudo systemctl status hermes-app.service
-```
-
-## 🔧 Configuration
-
--   **Port:** The application runs on port `5000` by default (configurable in `server.py` and `start.sh`).
--   **Backup Location:** The `scripts/hermes-app-backup.sh` script can now take a target directory as its first argument (e.g., `./scripts/hermes-app-backup.sh /var/backups/hermes`).
-
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check [issues page](https://github.com/Rui-Marcelino/hermes-app/issues).
-
-## 📝 License
-
-This project is [MIT licensed](LICENSE).
-
-## 💡 Inspiration & Thanks
-
-Inspired by the powerful multi-agent workflow management of OpenClaw and Jarbas systems.
+Ensure your main Hermes Agent gateway is running and accessible for `hermes-app` to function correctly.
 
 ---
 
-_Generated by Hermes Agent._
+## ⚙️ Configuration
+
+- **Backup script**: The `scripts/hermes-app-backup.sh` now accepts an optional argument for the backup destination directory.
+  ```bash
+  ./scripts/hermes-app-backup.sh /path/to/your/backups
+  # Or use default destination:
+  ./scripts/hermes-app-backup.sh
+  ```
+
+---
+
+## 📸 Screenshots
+
+*(To be added)*
+
+---
+
+## 🤝 Contributing & Feedback
+
+All contributions, bug reports, and feature requests are welcome! Feel free to open an issue or submit a pull request on GitHub.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the `LICENSE` file for details.
