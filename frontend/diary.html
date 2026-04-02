@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Diary</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+body { overflow-y: auto; }
+
+/* Stats */
+.diary-stats { display:flex; gap:24px; justify-content:center; margin-bottom:20px; }
+.diary-stat { text-align:center; }
+.diary-stat .v { font-size:2em; font-weight:600; color:var(--purple); }
+.diary-stat .l { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.5px; }
+
+/* New entry form */
+.new-entry { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:20px; }
+.new-entry h2 { font-size:13px; color:var(--purple); margin-bottom:12px; font-weight:600; }
+.form-row { display:flex; gap:8px; margin-bottom:8px; }
+.form-row > * { flex:1; }
+.form-input { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+  background:var(--card2); color:var(--text); font-family:inherit; font-size:13px; outline:none; }
+.form-input:focus { border-color:#484f58; }
+textarea.form-input { min-height:90px; resize:vertical; }
+.form-actions { display:flex; gap:8px; margin-top:10px; align-items:center; }
+
+/* Filter bar */
+.filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.filter-bar select, .filter-bar input { width:auto; }
+
+/* Day groups */
+.day-group { margin-bottom:8px; background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.day-hdr { padding:10px 14px; background:var(--bg); cursor:pointer; display:flex;
+  justify-content:space-between; align-items:center; user-select:none; }
+.day-hdr:hover { background:#1c2128; }
+.day-title { font-weight:600; font-size:13px; display:flex; align-items:center; gap:8px; }
+.day-arrow { font-size:10px; color:var(--dim); transition:transform .2s; display:inline-block; }
+.day-meta { font-size:11px; color:var(--dim); }
+.day-content { padding:12px; display:none; }
+.day-group.open .day-content { display:block; }
+.day-group.open .day-arrow { transform:rotate(90deg); }
+
+/* Entries */
+.entry { background:var(--bg); border-radius:6px; padding:12px; margin-bottom:8px;
+  border-left:3px solid var(--purple); }
+.entry:last-child { margin-bottom:0; }
+.entry.t-summary   { border-left-color:var(--blue); }
+.entry.t-milestone { border-left-color:var(--purple); }
+.entry.t-note      { border-left-color:var(--green); }
+.entry.t-issue     { border-left-color:var(--red); }
+.entry.t-idea      { border-left-color:var(--orange); }
+
+.entry-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.entry-type { font-size:10px; padding:2px 6px; border-radius:3px; background:var(--card2);
+  color:var(--dim); text-transform:uppercase; letter-spacing:.3px; }
+.entry-title { font-size:14px; font-weight:600; margin-bottom:6px; color:var(--text); }
+.entry-content { color:var(--text); line-height:1.6; white-space:pre-wrap; font-size:13px;
+  max-height:280px; overflow-y:auto; }
+.entry-content.expanded { max-height:none; }
+.entry-actions { margin-top:8px; display:flex; gap:6px; justify-content:flex-end; }
+
+.btn-sm-sec { background:var(--card2); border:1px solid var(--border); color:var(--dim);
+  padding:3px 9px; border-radius:4px; cursor:pointer; font-size:11px; }
+.btn-sm-sec:hover { color:var(--text); border-color:#484f58; }
+.btn-sm-danger { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3);
+  color:var(--red); padding:3px 9px; border-radius:4px; cursor:pointer; font-size:11px; }
+.btn-sm-danger:hover { background:rgba(248,81,73,0.2); }
+
+.edit-form { display:none; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
+.edit-form.open { display:block; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+  <div class="sidebar">
+    <a href="/index.html" class="sidebar-brand">
+      <span class="brand-icon">⬡</span>
+      <div>
+        <span class="brand-name">Hermes</span>
+        <span class="brand-sub">Agent Dashboard</span>
+      </div>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+      <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+      <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">System</div>
+      <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+      <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+      <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+      <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-status" id="sidebar-gw-status">
+        <span class="dot dot-yellow"></span>
+        <span id="sidebar-gw-text">Checking...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <div class="page">
+      <div class="page-title">📓 Hermes ↔ Rui Diary</div>
+
+      <!-- Stats -->
+      <div class="diary-stats">
+        <div class="diary-stat"><div class="v" id="sSummaries">0</div><div class="l">Summaries</div></div>
+        <div class="diary-stat"><div class="v" id="sTotal">0</div><div class="l">Total Entries</div></div>
+        <div class="diary-stat"><div class="v" id="sStreak">0</div><div class="l">Day Streak</div></div>
+        <div class="diary-stat"><div class="v" id="sDays">0</div><div class="l">Days Active</div></div>
+      </div>
+
+      <!-- New entry -->
+      <div class="new-entry">
+        <h2>✏️ New Entry</h2>
+        <div class="form-row">
+          <input type="date" id="nDate" class="form-input">
+          <select id="nType" class="form-input">
+            <option value="summary">📊 Daily Summary</option>
+            <option value="milestone">🎯 Milestone</option>
+            <option value="note">📝 Note</option>
+            <option value="idea">💡 Idea</option>
+            <option value="issue">⚠️ Issue</option>
+          </select>
+        </div>
+        <input type="text" id="nTitle" class="form-input" placeholder="Title..." style="margin-bottom:8px">
+        <textarea id="nContent" class="form-input" placeholder="Write entry... (Shift+Enter for new lines)"></textarea>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="addEntry()">💾 Save Entry</button>
+          <button class="btn" onclick="clearForm()">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="filter-bar">
+        <select id="fType" class="form-input" style="width:auto" onchange="render()">
+          <option value="">All Types</option>
+          <option value="summary">📊 Summary</option>
+          <option value="milestone">🎯 Milestone</option>
+          <option value="note">📝 Note</option>
+          <option value="idea">💡 Idea</option>
+          <option value="issue">⚠️ Issue</option>
+        </select>
+        <input type="month" id="fMonth" class="form-input" style="width:auto" onchange="render()">
+        <button class="btn" onclick="clearFilters()">Clear filters</button>
+      </div>
+
+      <!-- Entries -->
+      <div id="entries"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+
+// Sidebar status
+(async function() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      if(dot) dot.className = 'dot dot-green';
+      if(txt) txt.textContent = 'Gateway running';
+    } else {
+      if(dot) dot.className = 'dot dot-red';
+      if(txt) txt.textContent = 'Gateway stopped';
+    }
+  } catch(e) {}
+})();
+
+// Set today's date as default
+document.getElementById('nDate').valueAsDate = new Date();
+
+const ICONS = { summary:'📊', milestone:'🎯', note:'📝', idea:'💡', issue:'⚠️' };
+let allEntries = [];
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/diary');
+    const d = await r.json();
+    allEntries = d.entries || [];
+    render();
+  } catch(e) {
+    document.getElementById('entries').innerHTML = `<div class="empty">Error loading diary: ${esc(e.message)}</div>`;
+  }
+}
+
+function render() {
+  const tf = document.getElementById('fType').value;
+  const mf = document.getElementById('fMonth').value;
+
+  let items = [...allEntries];
+  if (tf) items = items.filter(e => e.type === tf);
+  if (mf) items = items.filter(e => e.date && e.date.startsWith(mf));
+  items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // Stats (always from full dataset)
+  const allDates = [...new Set(allEntries.map(e => e.date))].sort().reverse();
+  document.getElementById('sTotal').textContent = allEntries.length;
+  document.getElementById('sSummaries').textContent = allEntries.filter(e => e.type === 'summary').length;
+  document.getElementById('sDays').textContent = allDates.length;
+
+  // Streak
+  let streak = 0, check = new Date().toISOString().split('T')[0];
+  for (const dt of allDates) {
+    if (dt === check) {
+      streak++;
+      const x = new Date(check);
+      x.setDate(x.getDate() - 1);
+      check = x.toISOString().split('T')[0];
+    } else if (dt < check) break;
+  }
+  document.getElementById('sStreak').textContent = streak;
+
+  // Group by day
+  const grouped = new Map();
+  items.forEach(e => {
+    const day = e.date || 'Unknown';
+    if (!grouped.has(day)) grouped.set(day, []);
+    grouped.get(day).push(e);
+  });
+
+  const container = document.getElementById('entries');
+  if (!items.length) {
+    container.innerHTML = '<div class="empty">No entries yet ✍️ — write the first one above!</div>';
+    return;
+  }
+
+  let html = '';
+  let first = true;
+  const sorted = [...grouped.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+
+  for (const [day, dayItems] of sorted) {
+    const fmtDay = day !== 'Unknown'
+      ? new Date(day + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+      : 'Unknown date';
+    const typeCounts = {};
+    dayItems.forEach(e => typeCounts[e.type] = (typeCounts[e.type] || 0) + 1);
+    const metaParts = Object.entries(typeCounts).map(([t, n]) => `${ICONS[t]||'📓'} ${n}`);
+
+    html += `<div class="day-group ${first ? 'open' : ''}">
+      <div class="day-hdr" onclick="this.parentElement.classList.toggle('open')">
+        <div class="day-title"><span class="day-arrow">▶</span>${esc(fmtDay)}</div>
+        <div class="day-meta">${metaParts.join(' · ')}</div>
+      </div>
+      <div class="day-content">`;
+
+    dayItems.forEach(e => {
+      html += `<div class="entry t-${esc(e.type)}" id="entry-${esc(e.id)}">
+        <div class="entry-hdr">
+          <span class="entry-type">${ICONS[e.type] || '📓'} ${esc(e.type)}</span>
+          <span style="font-size:10px;color:var(--dim)">${esc(e.createdAt ? e.createdAt.replace('T',' ').slice(0,16) : '')}</span>
+        </div>
+        <div class="entry-title">${esc(e.title)}</div>
+        <div class="entry-content" id="ec-${esc(e.id)}">${esc(e.content)}</div>
+        <div class="entry-actions">
+          <button class="btn-sm-sec" onclick="toggleExpand('ec-${esc(e.id)}')">↕ Expand</button>
+          <button class="btn-sm-sec" onclick="toggleEdit('${esc(e.id)}')">✏️ Edit</button>
+          <button class="btn-sm-danger" onclick="delEntry('${esc(e.id)}')">🗑️ Delete</button>
+        </div>
+        <div class="edit-form" id="ef-${esc(e.id)}">
+          <div class="form-row" style="margin-bottom:8px">
+            <input type="date" class="form-input" id="ed-${esc(e.id)}" value="${esc(e.date)}">
+            <select class="form-input" id="et-${esc(e.id)}">
+              <option value="summary" ${e.type==='summary'?'selected':''}>📊 Daily Summary</option>
+              <option value="milestone" ${e.type==='milestone'?'selected':''}>🎯 Milestone</option>
+              <option value="note" ${e.type==='note'?'selected':''}>📝 Note</option>
+              <option value="idea" ${e.type==='idea'?'selected':''}>💡 Idea</option>
+              <option value="issue" ${e.type==='issue'?'selected':''}>⚠️ Issue</option>
+            </select>
+          </div>
+          <input type="text" class="form-input" id="eti-${esc(e.id)}" value="${esc(e.title)}" style="margin-bottom:8px">
+          <textarea class="form-input" id="eco-${esc(e.id)}" style="min-height:80px">${esc(e.content)}</textarea>
+          <div class="form-actions" style="margin-top:8px">
+            <button class="btn btn-primary" onclick="saveEdit('${esc(e.id)}')">💾 Save</button>
+            <button class="btn" onclick="toggleEdit('${esc(e.id)}')">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+    first = false;
+  }
+
+  container.innerHTML = html;
+}
+
+function toggleExpand(id) {
+  document.getElementById(id)?.classList.toggle('expanded');
+}
+
+function toggleEdit(id) {
+  document.getElementById(`ef-${id}`)?.classList.toggle('open');
+}
+
+async function addEntry() {
+  const title = document.getElementById('nTitle').value.trim();
+  if (!title) { toast('Title is required', 'red', 2000); return; }
+  const content = document.getElementById('nContent').value.trim();
+  const date = document.getElementById('nDate').value;
+  const type = document.getElementById('nType').value;
+
+  try {
+    const r = await fetch('/api/diary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, type, title, content }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+    clearForm();
+    await load();
+    toast('Entry saved', 'green', 2000);
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+async function saveEdit(id) {
+  const title   = document.getElementById(`eti-${id}`)?.value.trim();
+  const content = document.getElementById(`eco-${id}`)?.value.trim();
+  const type    = document.getElementById(`et-${id}`)?.value;
+  const date    = document.getElementById(`ed-${id}`)?.value;
+  if (!title) { toast('Title is required', 'red', 2000); return; }
+
+  try {
+    const r = await fetch(`/api/diary/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, type, date }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+    await load();
+    toast('Entry updated', 'green', 2000);
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+async function delEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  try {
+    const r = await fetch(`/api/diary/${id}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+    await load();
+    toast('Entry deleted', 'blue', 2000);
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+function clearForm() {
+  document.getElementById('nTitle').value = '';
+  document.getElementById('nContent').value = '';
+  document.getElementById('nType').value = 'summary';
+  document.getElementById('nDate').valueAsDate = new Date();
+}
+
+function clearFilters() {
+  document.getElementById('fType').value = '';
+  document.getElementById('fMonth').value = '';
+  render();
+}
+
+// Shift+Enter in textarea = newline (Enter alone = nothing special, just normal newline)
+document.getElementById('nContent').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); addEntry(); }
+});
+
+load();
+</script>
+</body>
+</html>

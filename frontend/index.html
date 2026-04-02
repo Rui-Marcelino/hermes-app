@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Dashboard</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+.platform-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.platform-row:last-child { border-bottom:none; }
+.platform-name { flex:1; color:var(--text); }
+.platform-state { font-size:11px; }
+.recent-table td:first-child { color:var(--dim); font-size:11px; }
+.model-pill { background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:3px 10px; font-size:11px; color:var(--blue); }
+.version-badge { font-size:11px; color:var(--dim); }
+.gateway-controls { display:flex; gap:6px; margin-top:10px; }
+.section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.section-header h3 { font-size:12px; font-weight:500; color:var(--dim); text-transform:uppercase; letter-spacing:0.5px; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+<div class="sidebar">
+  <a href="/index.html" class="sidebar-brand">
+    <span class="brand-icon">⬡</span>
+    <div>
+      <span class="brand-name">Hermes</span>
+      <span class="brand-sub">Agent Dashboard</span>
+    </div>
+  </a>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+    <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+    <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">System</div>
+    <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+    <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+    <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+    <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-status" id="sidebar-gw-status">
+      <span class="dot dot-yellow"></span>
+      <span id="sidebar-gw-text">Checking...</span>
+    </div>
+  </div>
+</div>
+<div class="main-wrap">
+
+<div class="page">
+  <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:20px;">
+    <div class="page-title">Dashboard</div>
+    <span class="version-badge" id="version-badge">—</span>
+    <span class="model-pill" id="model-pill">—</span>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Sessions</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sessions Today</div>
+      <div class="stat-value" id="stat-today">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Tokens</div>
+      <div class="stat-value" id="stat-tokens">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Est. Cost</div>
+      <div class="stat-value" id="stat-cost">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cron Jobs</div>
+      <div class="stat-value" id="stat-cron">—</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Gateway card -->
+    <div class="card">
+      <div class="section-header">
+        <h3>Gateway</h3>
+        <span id="gateway-badge" class="badge">—</span>
+      </div>
+      <div id="platforms-list"><div class="loading">Loading...</div></div>
+      <div class="gateway-controls">
+        <button class="btn btn-green" onclick="gatewayAction('start')">▶ Start</button>
+        <button class="btn" onclick="gatewayAction('restart')">↻ Restart</button>
+        <button class="btn btn-red" onclick="gatewayAction('stop')">■ Stop</button>
+      </div>
+    </div>
+
+    <!-- API server card -->
+    <div class="card">
+      <div class="section-header">
+        <h3>API Server</h3>
+        <span id="api-badge" class="badge">—</span>
+      </div>
+      <div style="font-size:12px; color:var(--dim); margin-bottom:8px;">
+        Hermes HTTP API — used by the Chat page
+      </div>
+      <div style="font-size:12px;">
+        <div style="margin-bottom:6px;">
+          Endpoint: <code style="color:var(--blue); background:var(--card2); padding:2px 6px; border-radius:3px;">http://127.0.0.1:8642/v1</code>
+        </div>
+        <div id="api-detail" style="color:var(--dim); font-size:11px;">Checking...</div>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-blue" onclick="testApiServer()">⚡ Test Connection</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent sessions -->
+  <div class="card">
+    <div class="section-header">
+      <h3>Recent Sessions</h3>
+      <a href="/sessions.html" class="btn" style="font-size:11px;">View all →</a>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Time</th><th>Title</th><th>Source</th><th>Model</th><th>Messages</th><th>Tokens</th><th>Cost</th>
+      </tr></thead>
+      <tbody id="recent-tbody">
+        <tr><td colspan="7" class="loading">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+async function loadAll() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+
+    // Sidebar status
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      if(dot) { dot.className = 'dot dot-green'; }
+      if(txt) txt.textContent = 'Gateway running';
+    } else {
+      if(dot) { dot.className = 'dot dot-red'; }
+      if(txt) txt.textContent = 'Gateway stopped';
+    }
+
+    // Version + model
+    document.getElementById('version-badge').textContent = d.version || '—';
+    document.getElementById('model-pill').textContent = d.model || '—';
+
+    // Stats
+    document.getElementById('stat-total').textContent  = fmtNum(d.stats.total);
+    document.getElementById('stat-today').textContent  = fmtNum(d.stats.today);
+    document.getElementById('stat-tokens').textContent = fmtNum(d.stats.total_tokens);
+    document.getElementById('stat-cost').textContent   = fmtCost(d.stats.total_cost);
+    document.getElementById('stat-cron').textContent   = d.cron_count ?? '—';
+
+    // Gateway
+    const gwBadge = document.getElementById('gateway-badge');
+    if (d.gateway.running) {
+      gwBadge.className = 'badge badge-green';
+      gwBadge.textContent = 'Running';
+    } else {
+      gwBadge.className = 'badge badge-red';
+      gwBadge.textContent = 'Stopped';
+    }
+
+    const platforms = d.gateway.platforms || {};
+    const pl = document.getElementById('platforms-list');
+    const pkeys = Object.keys(platforms);
+    if (pkeys.length === 0) {
+      pl.innerHTML = '<div class="empty">No platforms configured</div>';
+    } else {
+      pl.innerHTML = pkeys.map(name => {
+        const st = platforms[name];
+        const state = st.state || 'unknown';
+        const color = state === 'connected' ? 'var(--green)' : state === 'error' ? 'var(--red)' : 'var(--yellow)';
+        const dot = `<span class="dot" style="background:${color}"></span>`;
+        return `<div class="platform-row">
+          ${dot}
+          <span class="platform-name">${name}</span>
+          <span class="platform-state" style="color:${color}">${state}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // API server
+    const apiBadge = document.getElementById('api-badge');
+    const apiDetail = document.getElementById('api-detail');
+    if (d.api_server.alive) {
+      apiBadge.className = 'badge badge-green';
+      apiBadge.textContent = 'Online';
+      apiDetail.innerHTML = '<span style="color:var(--green)">✓ Responding on port 8642</span>';
+    } else {
+      apiBadge.className = 'badge badge-red';
+      apiBadge.textContent = 'Offline';
+      apiDetail.innerHTML = '<span style="color:var(--red)">✗ Not reachable — restart gateway to fix</span>';
+    }
+
+    // Recent sessions
+    const tbody = document.getElementById('recent-tbody');
+    if (!d.recent_sessions || d.recent_sessions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No sessions yet</td></tr>';
+    } else {
+      tbody.innerHTML = d.recent_sessions.map(s => `
+        <tr class="clickable" onclick="window.location='/sessions.html?id=${s.id}'">
+          <td style="color:var(--dim);font-size:11px;">${fmtRelative(s.started_at)}</td>
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title || '<span style="color:var(--dim)">untitled</span>'}</td>
+          <td>${sourceBadge(s.source)}</td>
+          <td style="color:var(--dim);font-size:11px;">${s.model ? s.model.split('/').pop() : '—'}</td>
+          <td style="color:var(--dim)">${s.message_count ?? '—'}</td>
+          <td style="color:var(--dim)">${fmtNum(s.tokens)}</td>
+          <td style="color:var(--dim)">${fmtCost(s.cost)}</td>
+        </tr>`).join('');
+    }
+
+  } catch(e) {
+    toast('Failed to load status: ' + e.message, 'red');
+  }
+}
+
+async function gatewayAction(action) {
+  toast(`Gateway: ${action}ing...`, 'blue');
+  try {
+    const r = await fetch(`/api/gateway/${action}`, {method:'POST'});
+    const d = await r.json();
+    if (d.ok) {
+      toast(`Gateway ${action} successful`, 'green');
+    } else {
+      toast(`Gateway ${action} failed`, 'red');
+    }
+    setTimeout(loadAll, 1500);
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+async function testApiServer() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    if (d.api_server.alive) {
+      toast('API server is responding ✓', 'green');
+    } else {
+      toast('API server not reachable — restart gateway', 'red');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+
+// Update sidebar gateway status
+async function updateSidebarStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      dot.className = 'dot dot-green';
+      txt.textContent = 'Gateway running';
+    } else {
+      dot.className = 'dot dot-red';
+      txt.textContent = 'Gateway stopped';
+    }
+  } catch(e) {}
+}
+updateSidebarStatus();
+setInterval(updateSidebarStatus, 30000);
+
+// Load on start, refresh every 30s
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</div><!-- main-wrap -->
+</div><!-- app-layout -->
+</body>
+</html>

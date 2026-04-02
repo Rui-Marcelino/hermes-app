@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — 🧩 Skills</title>
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="app-layout">
+<div class="sidebar">
+  <a href="/index.html" class="sidebar-brand">
+    <span class="brand-icon">⬡</span>
+    <div>
+      <span class="brand-name">Hermes</span>
+      <span class="brand-sub">Agent Dashboard</span>
+    </div>
+  </a>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+    <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+    <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">System</div>
+    <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+    <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+    <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+    <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-status" id="sidebar-gw-status">
+      <span class="dot dot-yellow"></span>
+      <span id="sidebar-gw-text">Checking...</span>
+    </div>
+  </div>
+</div>
+<div class="main-wrap">
+  <div class="page">
+    <div class="page-title">🧩 Skills</div>
+    <p style="color:var(--dim); font-size:13px; margin-top:8px;">Browse and manage installed Hermes skills. Coming soon.</p>
+  </div>
+</div>
+</div>
+<script src="/js/shared.js"></script>
+<script>
+(async function() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      if(dot) dot.className = 'dot dot-green';
+      if(txt) txt.textContent = 'Gateway running';
+    } else {
+      if(dot) dot.className = 'dot dot-red';
+      if(txt) txt.textContent = 'Gateway stopped';
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>

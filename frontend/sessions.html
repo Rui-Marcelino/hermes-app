@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Sessions</title>
+<link rel="stylesheet" href="/css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+body { overflow:hidden; }
+.main-wrap.fullheight { display:flex; flex-direction:column; }
+.filter-bar { padding:8px 16px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--border); background:var(--card); }
+.fbtn { background:var(--card2); border:1px solid var(--border); color:var(--dim); padding:4px 10px; border-radius:12px; cursor:pointer; font-size:11px; transition:all 0.15s; }
+.fbtn:hover { border-color:#484f58; color:var(--text); }
+.fbtn.on { border-color:var(--green); color:var(--green); background:rgba(63,185,80,.08); }
+.flabel { color:#484f58; font-size:11px; margin-right:2px; }
+.list-view { flex:1; overflow-y:auto; padding:8px 16px; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); color:var(--dim); font-weight:500; font-size:10px; text-transform:uppercase; }
+td { padding:5px 8px; border-bottom:1px solid #21262d; }
+tr.srow:hover { background:#1c2128; cursor:pointer; }
+.count { font-size:11px; color:var(--dim); margin-left:8px; }
+
+/* Chat view */
+.chat-view { display:none; flex-direction:column; height:100%; }
+.chat-hdr { padding:8px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--card); }
+.back-btn { background:none; border:1px solid var(--border); color:var(--dim); padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; }
+.back-btn:hover { background:#1c2128; color:var(--text); }
+.chat-content { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
+.chat-meta { font-size:11px; color:var(--dim); padding:8px 16px; border-bottom:1px solid var(--border); display:flex; gap:16px; flex-wrap:wrap; background:var(--bg); }
+
+.msg { max-width:82%; padding:10px 14px; border-radius:10px; line-height:1.55; font-size:13px; position:relative; }
+.msg-user { align-self:flex-end; background:#1e3a5f; color:#e0e7ff; border-bottom-right-radius:2px; }
+.msg-assistant { align-self:flex-start; background:#1f2937; color:#e5e7eb; border-bottom-left-radius:2px; }
+.msg-system { align-self:center; background:var(--card2); color:var(--dim); font-size:11px; padding:4px 12px; border-radius:12px; max-width:90%; text-align:center; }
+.msg-tool { align-self:flex-start; background:#1c1917; border:1px solid var(--border); color:#d6d3d1; font-family:monospace; font-size:11px; border-radius:6px; overflow:hidden; max-width:90%; }
+.tool-hdr { padding:6px 10px; background:var(--card2); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+.tool-body { padding:8px 10px; white-space:pre-wrap; max-height:300px; overflow-y:auto; display:none; }
+.tool-body.open { display:block; }
+
+.ts { font-size:10px; opacity:.4; display:block; margin-bottom:4px; }
+.copy-btn { position:absolute; top:6px; right:6px; background:var(--card2); border:1px solid var(--border); color:var(--dim); padding:2px 7px; border-radius:3px; font-size:10px; cursor:pointer; opacity:0; transition:opacity 0.15s; }
+.msg:hover .copy-btn { opacity:1; }
+.copy-btn:hover { color:var(--text); }
+
+.msg p { margin-bottom:6px; }
+.msg p:last-child { margin-bottom:0; }
+.msg code { background:rgba(0,0,0,.35); padding:1px 5px; border-radius:3px; font-size:12px; }
+.msg pre { background:rgba(0,0,0,.35); padding:8px; border-radius:4px; overflow-x:auto; margin:6px 0; font-size:11px; }
+.msg ul, .msg ol { padding-left:18px; margin-bottom:6px; }
+
+.day-sep { text-align:center; padding:8px; color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+<div class="sidebar">
+  <a href="/index.html" class="sidebar-brand">
+    <span class="brand-icon">⬡</span>
+    <div>
+      <span class="brand-name">Hermes</span>
+      <span class="brand-sub">Agent Dashboard</span>
+    </div>
+  </a>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+    <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+    <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">System</div>
+    <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+    <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+    <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+    <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-status" id="sidebar-gw-status">
+      <span class="dot dot-yellow"></span>
+      <span id="sidebar-gw-text">Checking...</span>
+    </div>
+  </div>
+</div>
+<div class="main-wrap fullheight">
+
+
+<!-- List view -->
+<div id="listView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+  <div class="filter-bar" style="justify-content:space-between;flex-wrap:wrap;">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;" id="filter-inner">
+    <span class="flabel">Source:</span>
+    <button class="fbtn on" data-f="source" data-v="all"       onclick="filt(this)">All</button>
+    <button class="fbtn"    data-f="source" data-v="cli"        onclick="filt(this)">💻 CLI</button>
+    <button class="fbtn"    data-f="source" data-v="telegram"   onclick="filt(this)">📱 Telegram</button>
+    <button class="fbtn"    data-f="source" data-v="api_server" onclick="filt(this)">🌐 Web</button>
+    <button class="fbtn"    data-f="source" data-v="cron"       onclick="filt(this)">⏰ Cron</button>
+    <button class="fbtn"    data-f="source" data-v="delegation" onclick="filt(this)">🤖 Agent</button>
+  </div>
+  <span class="count" id="sCount" style="padding:0 8px;margin-left:auto;"></span>
+  </div>
+  <div class="list-view">
+    <table>
+      <thead><tr>
+        <th>Time</th>
+        <th>Title</th>
+        <th>Source</th>
+        <th>Model</th>
+        <th>Msgs</th>
+        <th>Tokens</th>
+        <th>Cost</th>
+        <th>Duration</th>
+      </tr></thead>
+      <tbody id="tBody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Chat view (session detail) -->
+<div class="chat-view" id="chatView">
+  <div class="chat-hdr">
+    <button class="back-btn" onclick="showList()">← Back</button>
+    <span id="chatTitle" style="font-size:13px;font-weight:500;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 12px;"></span>
+    <button class="btn" onclick="copySession()">Copy all</button>
+    <button class="btn btn-green" id="resumeBtn" onclick="resumeInChat()" style="margin-left:4px;">▶ Resume in Chat</button>
+  </div>
+  <div class="chat-meta" id="chatMeta"></div>
+  <div class="chat-content" id="chatContent"></div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+marked.setOptions({ breaks: true, gfm: true });
+
+let allSessions = [];
+let filters = { source: 'all' };
+let currentSession = null;
+
+async function loadSessions() {
+  try {
+    const r = await fetch('/api/sessions?limit=500');
+    allSessions = await r.json();
+    renderTable();
+  } catch(e) {
+    document.getElementById('tBody').innerHTML = `<tr><td colspan="8" class="empty">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function filt(btn) {
+  const f = btn.dataset.f, v = btn.dataset.v;
+  filters[f] = v;
+  document.querySelectorAll(`.fbtn[data-f="${f}"]`).forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderTable();
+}
+
+function renderTable() {
+  let rows = allSessions;
+  if (filters.source !== 'all') rows = rows.filter(s => s.source === filters.source);
+
+  document.getElementById('sCount').textContent = `${rows.length} sessions`;
+
+  if (rows.length === 0) {
+    document.getElementById('tBody').innerHTML = '<tr><td colspan="8" class="empty">No sessions found</td></tr>';
+    return;
+  }
+
+  document.getElementById('tBody').innerHTML = rows.map(s => {
+    const dur = s.ended_at && s.started_at ? fmtDur(s.ended_at - s.started_at) : '—';
+    return `<tr class="srow" onclick="openSession('${s.id}')">
+      <td style="color:var(--dim);font-size:11px;white-space:nowrap;">${fmtTime(s.started_at)}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title || '<span style="color:var(--dim)">untitled</span>'}</td>
+      <td>${sourceBadge(s.source)}</td>
+      <td style="color:var(--dim);font-size:11px;">${s.model ? s.model.split('/').pop() : '—'}</td>
+      <td style="color:var(--dim)">${s.message_count ?? '—'}</td>
+      <td style="color:var(--dim)">${fmtNum(s.tokens)}</td>
+      <td style="color:var(--dim)">${fmtCost(s.cost)}</td>
+      <td style="color:var(--dim);font-size:11px;">${dur}</td>
+    </tr>`;
+  }).join('');
+}
+
+function fmtDur(sec) {
+  if (!sec || sec < 0) return '—';
+  if (sec < 60) return Math.round(sec) + 's';
+  if (sec < 3600) return Math.round(sec/60) + 'm';
+  return (sec/3600).toFixed(1) + 'h';
+}
+
+async function openSession(id) {
+  document.getElementById('listView').style.display = 'none';
+  const cv = document.getElementById('chatView');
+  cv.style.display = 'flex';
+  document.getElementById('chatContent').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('chatTitle').textContent = 'Loading...';
+
+  try {
+    const r = await fetch(`/api/session/${id}`);
+    const d = await r.json();
+    currentSession = d;
+
+    const s = d.session;
+    document.getElementById('chatTitle').textContent = s.title || 'Untitled session';
+
+    document.getElementById('chatMeta').innerHTML = [
+      `<span>📅 ${fmtTime(s.started_at)}</span>`,
+      `<span>${sourceBadge(s.source)}</span>`,
+      `<span>🤖 ${s.model || '—'}</span>`,
+      `<span>💬 ${s.message_count || 0} messages</span>`,
+      `<span>🔢 ${fmtNum((s.input_tokens||0)+(s.output_tokens||0))} tokens</span>`,
+      s.estimated_cost_usd ? `<span>💰 ${fmtCost(s.estimated_cost_usd)}</span>` : '',
+    ].filter(Boolean).join('');
+
+    renderMessages(d.messages);
+
+    // Scroll to bottom
+    setTimeout(() => {
+      const cc = document.getElementById('chatContent');
+      cc.scrollTop = cc.scrollHeight;
+    }, 50);
+
+  } catch(e) {
+    document.getElementById('chatContent').innerHTML = `<div class="empty">Error loading session: ${e.message}</div>`;
+  }
+
+  // Check URL param
+  const url = new URL(window.location);
+  url.searchParams.set('id', id);
+  window.history.pushState({}, '', url);
+}
+
+function renderMessages(messages) {
+  const cc = document.getElementById('chatContent');
+  if (!messages || messages.length === 0) {
+    cc.innerHTML = '<div class="empty">No messages</div>';
+    return;
+  }
+
+  let html = '';
+  let lastDay = '';
+
+  messages.forEach(m => {
+    const day = m.timestamp ? new Date(m.timestamp*1000).toDateString() : '';
+    if (day && day !== lastDay) {
+      html += `<div class="day-sep">${day}</div>`;
+      lastDay = day;
+    }
+
+    if (m.role === 'system') return; // skip system messages
+
+    if (m.role === 'tool') {
+      const label = m.tool_name || 'tool';
+      const body = safeContent(m.content);
+      html += `<div class="msg msg-tool">
+        <div class="tool-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+          <span>🔧 ${escHtml(label)}</span>
+          <span style="color:var(--dim);font-size:10px;">▼ result</span>
+        </div>
+        <div class="tool-body">${escHtml(body)}</div>
+      </div>`;
+      return;
+    }
+
+    if (m.role === 'assistant' && m.tool_calls) {
+      // Show tool calls made by assistant
+      let calls = [];
+      try { calls = JSON.parse(m.tool_calls); } catch(e) {}
+      if (calls.length > 0) {
+        calls.forEach(tc => {
+          const name = tc.function?.name || tc.name || 'tool';
+          let args = '';
+          try { args = JSON.stringify(JSON.parse(tc.function?.arguments || tc.arguments || '{}'), null, 2); }
+          catch(e) { args = tc.function?.arguments || tc.arguments || ''; }
+          html += `<div class="msg msg-tool">
+            <div class="tool-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+              <span>⚡ ${escHtml(name)}</span>
+              <span style="color:var(--dim);font-size:10px;">▼ call</span>
+            </div>
+            <div class="tool-body">${escHtml(args)}</div>
+          </div>`;
+        });
+      }
+      if (!m.content) return;
+    }
+
+    const cls = m.role === 'user' ? 'msg-user' : 'msg-assistant';
+    const content = safeContent(m.content);
+    const parsed = m.role === 'assistant' ? marked.parse(content) : escHtml(content).replace(/\n/g,'<br>');
+    const ts = m.timestamp ? `<span class="ts">${fmtTime(m.timestamp)}</span>` : '';
+
+    html += `<div class="msg ${cls}">
+      ${ts}
+      <button class="copy-btn" onclick="copyText(${JSON.stringify(content)}, this)">Copy</button>
+      ${parsed}
+    </div>`;
+  });
+
+  cc.innerHTML = html;
+}
+
+function safeContent(c) {
+  if (!c) return '';
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    return c.map(p => {
+      if (typeof p === 'string') return p;
+      if (p.type === 'text') return p.text || '';
+      return '';
+    }).join('');
+  }
+  return JSON.stringify(c);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showList() {
+  document.getElementById('chatView').style.display = 'none';
+  document.getElementById('listView').style.display = 'flex';
+  const url = new URL(window.location);
+  url.searchParams.delete('id');
+  window.history.pushState({}, '', url);
+}
+
+function copySession() {
+  if (!currentSession) return;
+  const msgs = currentSession.messages || [];
+  const text = msgs.map(m => `[${m.role.toUpperCase()}]\n${safeContent(m.content)}`).join('\n\n---\n\n');
+  copyText(text, null);
+}
+
+function resumeInChat() {
+  if (!currentSession) return;
+  const id = currentSession.session.id;
+  window.location.href = `/chat.html?resume=${id}`;
+}
+
+// Init
+loadSessions();
+
+// Check URL for session ID to open directly
+const urlParams = new URLSearchParams(window.location.search);
+const openId = urlParams.get('id');
+if (openId) {
+  // Wait for DOM then open
+  setTimeout(() => openSession(openId), 100);
+}
+</script>
+</div><!-- main-wrap -->
+</div><!-- app-layout -->
+</body>
+</html>

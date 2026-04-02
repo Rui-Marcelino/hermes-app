@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Scripts</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+body { overflow:hidden; }
+
+.group-label { font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase;
+  letter-spacing:.6px; padding:0 4px; margin:16px 0 6px; }
+
+.script-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+  overflow:hidden; margin-bottom:10px; }
+
+.script-header { display:flex; align-items:center; gap:12px; padding:12px 16px; }
+.script-icon { font-size:22px; flex-shrink:0; }
+.script-info { flex:1; min-width:0; }
+.script-name { font-size:13px; font-weight:600; color:var(--text); }
+.script-desc { font-size:11px; color:var(--dim); margin-top:2px; }
+.script-meta { font-size:10px; color:var(--dim); margin-top:4px; }
+.script-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+
+.btn-run { background:#1f3a1f; border:1px solid var(--green); color:var(--green);
+  padding:5px 14px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;
+  transition:background 0.15s; display:flex; align-items:center; gap:5px; }
+.btn-run:hover { background:#2a4d2a; }
+.btn-run:disabled { opacity:.4; cursor:default; }
+
+.btn-log { background:var(--card2); border:1px solid var(--border); color:var(--dim);
+  padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px;
+  transition:background 0.15s; }
+.btn-log:hover { background:#30363d; color:var(--text); }
+
+/* Output panel */
+.output-panel { display:none; border-top:1px solid var(--border); }
+.output-panel.open { display:block; }
+.output-toolbar { display:flex; align-items:center; gap:8px; padding:5px 12px;
+  background:#0a0e13; border-bottom:1px solid var(--border); }
+.status-pill { font-size:10px; padding:2px 8px; border-radius:10px; font-weight:600; }
+.pill-running { background:#1a3050; color:var(--blue); }
+.pill-done    { background:#0f2a18; color:var(--green); }
+.pill-error   { background:#2a1212; color:var(--red); }
+.output-body { font-family:'Courier New', monospace; font-size:11px; line-height:1.6;
+  padding:10px 14px; white-space:pre-wrap; max-height:320px; overflow-y:auto;
+  color:#a8c4a2; background:#0a0e13; }
+.line-ok  { color:var(--green); }
+.line-err { color:var(--red); }
+.cursor   { display:inline-block; width:7px; height:12px; background:var(--blue);
+  animation:blink .8s step-end infinite; vertical-align:text-bottom; margin-left:2px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+  <div class="sidebar">
+    <a href="/index.html" class="sidebar-brand">
+      <span class="brand-icon">⬡</span>
+      <div>
+        <span class="brand-name">Hermes</span>
+        <span class="brand-sub">Agent Dashboard</span>
+      </div>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+      <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+    <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">System</div>
+      <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+      <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+      <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+      <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-status" id="sidebar-gw-status">
+        <span class="dot dot-yellow"></span>
+        <span id="sidebar-gw-text">Checking...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <div class="page">
+      <div class="page-title">🛠️ Scripts</div>
+      <div id="page-body" style="margin-top:4px;">
+        <div class="loading">Loading scripts…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+
+let scripts = [], jobs = {}, pollTimers = {};
+
+async function init() {
+  // Sidebar status
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      if(dot) dot.className = 'dot dot-green';
+      if(txt) txt.textContent = 'Gateway running';
+    } else {
+      if(dot) dot.className = 'dot dot-red';
+      if(txt) txt.textContent = 'Gateway stopped';
+    }
+  } catch(e) {}
+
+  const [sr, jr] = await Promise.all([
+    fetch('/api/scripts').then(r => r.json()),
+    fetch('/api/scripts/jobs').then(r => r.json()),
+  ]);
+  scripts = sr.scripts || [];
+  (jr.jobs || []).forEach(j => {
+    if (!jobs[j.script_id] || j.started_at > jobs[j.script_id].started_at)
+      jobs[j.script_id] = j;
+  });
+  render();
+  // Re-attach pollers for any already-running jobs
+  (jr.jobs || []).filter(j => j.status === 'running').forEach(j => {
+    openOutput(j.script_id);
+    pollJob(j.script_id, j.job_id);
+  });
+}
+
+function render() {
+  const groups = {};
+  scripts.forEach(s => {
+    if (!groups[s.group]) groups[s.group] = [];
+    groups[s.group].push(s);
+  });
+
+  const body = document.getElementById('page-body');
+  body.innerHTML = '';
+
+  Object.entries(groups).forEach(([grp, list]) => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="group-label">${esc(grp)}</div>`;
+    list.forEach(s => wrap.appendChild(buildCard(s)));
+    body.appendChild(wrap);
+  });
+}
+
+function buildCard(s) {
+  const lastRun = s.last_run
+    ? s.last_run.replace('_', ' ').substring(0, 15)
+    : '—';
+
+  const card = document.createElement('div');
+  card.className = 'script-card';
+  card.id = `card-${s.id}`;
+  card.innerHTML = `
+    <div class="script-header">
+      <div class="script-icon">${s.icon || '📄'}</div>
+      <div class="script-info">
+        <div class="script-name">${esc(s.name)}</div>
+        <div class="script-desc">${esc(s.description)}</div>
+        <div class="script-meta">Last run: <span id="lr-${s.id}">${esc(lastRun)}</span></div>
+      </div>
+      <div class="script-actions">
+        ${s.log_count > 0
+          ? `<button class="btn-log" onclick="loadLastLog('${s.id}')">📋 Last Log</button>`
+          : ''}
+        <button class="btn-log" id="log-btn-${s.id}" onclick="toggleLog('${s.id}')" style="display:none">📋 Log</button>
+        <button class="btn-run" id="run-btn-${s.id}" onclick="runScript('${s.id}')">▶ Run</button>
+      </div>
+    </div>
+    <div class="output-panel" id="out-${s.id}">
+      <div class="output-toolbar">
+        <span class="status-pill pill-running" id="pill-${s.id}">⏳ Running</span>
+        <span style="font-size:10px;color:var(--dim)" id="pill-label-${s.id}"></span>
+        <button class="btn-log" style="margin-left:auto" onclick="toggleLog('${s.id}')">✕ Close</button>
+      </div>
+      <div class="output-body" id="output-${s.id}"></div>
+    </div>`;
+  return card;
+}
+
+async function loadLastLog(scriptId) {
+  const jr = await fetch('/api/scripts/jobs').then(r => r.json());
+  const job = (jr.jobs || [])
+    .filter(j => j.script_id === scriptId)
+    .sort((a, b) => b.job_id.localeCompare(a.job_id))[0];
+  if (!job) { toast('No log found', 'red'); return; }
+  openOutput(scriptId);
+  pollJob(scriptId, job.job_id);
+}
+
+async function runScript(id) {
+  const btn = document.getElementById(`run-btn-${id}`);
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Starting…';
+  try {
+    const r = await fetch('/api/scripts/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      btn.disabled = false;
+      btn.innerHTML = '▶ Run';
+      toast('Error: ' + (d.error || r.statusText), 'red');
+      return;
+    }
+    openOutput(id);
+    pollJob(id, d.job_id);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run';
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+function openOutput(id) {
+  document.getElementById(`out-${id}`).classList.add('open');
+  const lb = document.getElementById(`log-btn-${id}`);
+  if (lb) lb.style.display = '';
+}
+
+function toggleLog(id) {
+  document.getElementById(`out-${id}`).classList.toggle('open');
+}
+
+async function pollJob(id, jobId) {
+  if (pollTimers[id]) clearInterval(pollTimers[id]);
+
+  const poll = async () => {
+    try {
+      const r = await fetch(`/api/scripts/log/${jobId}`);
+      const d = await r.json();
+
+      const out  = document.getElementById(`output-${id}`);
+      const pill = document.getElementById(`pill-${id}`);
+      const btn  = document.getElementById(`run-btn-${id}`);
+      const lr   = document.getElementById(`lr-${id}`);
+      if (!out) { clearInterval(pollTimers[id]); return; }
+
+      // Render lines with colouring
+      const lines = (d.output || '').split('\n');
+      out.innerHTML = lines.map(l => {
+        if (l.startsWith('✅') || l.toLowerCase().includes('done') || l.toLowerCase().includes('complete'))
+          return `<span class="line-ok">${esc(l)}</span>`;
+        if (l.startsWith('❌') || l.toLowerCase().includes('error'))
+          return `<span class="line-err">${esc(l)}</span>`;
+        return esc(l);
+      }).join('\n');
+
+      if (d.status === 'running') {
+        out.innerHTML += '\n<span class="cursor"></span>';
+        pill.className = 'status-pill pill-running';
+        pill.textContent = '⏳ Running';
+      } else {
+        clearInterval(pollTimers[id]);
+        btn.disabled = false;
+        btn.innerHTML = '▶ Run';
+        if (d.status === 'done' && (d.returncode === 0 || d.returncode === null)) {
+          pill.className = 'status-pill pill-done';
+          pill.textContent = '✅ Done';
+          const ts = new Date().toLocaleString();
+          if (lr) lr.textContent = ts;
+          toast('Script completed successfully', 'green');
+        } else {
+          pill.className = 'status-pill pill-error';
+          pill.textContent = `❌ Error (rc=${d.returncode})`;
+          toast('Script failed — check the log', 'red');
+        }
+      }
+      out.scrollTop = out.scrollHeight;
+    } catch(e) {
+      clearInterval(pollTimers[id]);
+    }
+  };
+
+  await poll();
+  pollTimers[id] = setInterval(poll, 1500);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>
