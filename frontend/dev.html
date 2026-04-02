@@ -221,6 +221,60 @@ const ROADMAP = [
   { id:'DEV-020', section:'planned', tag:'idea',
     title:'Lessons Learned / Notes page',
     desc:'Markdown-based notes area for agent interaction insights and post-mortems.' },
+  // ── NEW ITEMS (DEV-021 onwards) ──────────────────────────────────────────
+
+  { id:'DEV-021', section:'queued', tag:'feat',
+    title:'Cron: daily diary auto-summary',
+    desc:'Scheduled job that summarises the day\'s agent activity and appends to Diary -- only if something happened and entry does not already exist.' },
+
+  { id:'DEV-022', section:'queued', tag:'feat',
+    title:'Config reader with search (readonly)',
+    desc:'Browse ~/.hermes/config.yaml in the browser with a live search/filter. Read-only -- no edits. Replaces the stub Config page.' },
+
+  { id:'DEV-023', section:'queued', tag:'feat',
+    title:'Workspace tree viewer (readonly)',
+    desc:'Visual file tree of ~/.hermes directory. Click to preview file contents. Read-only, no editing.' },
+
+  { id:'DEV-024', section:'queued', tag:'feat',
+    title:'Log viewer',
+    desc:'Live-tailing and browsing of Hermes logs (gateway, sessions, errors). Filter by level and date.' },
+
+  { id:'DEV-025', section:'planned', tag:'feat',
+    title:'Cron: NousResearch news and updates',
+    desc:'Scheduled job that fetches updates from NousResearch (blog, GitHub releases, socials) and posts a summary to the News page.' },
+
+  { id:'DEV-026', section:'planned', tag:'feat',
+    title:'News page',
+    desc:'Feed of AI/Hermes-relevant news. Initial focus: NousResearch updates from the cron job. Expandable to other sources.' },
+
+  { id:'DEV-027', section:'planned', tag:'feat',
+    title:'Research page',
+    desc:'Repository of research summaries and outputs. Inspired by Jarbas-app /out page -- categorised documents, markdown rendering, View buttons.' },
+
+  { id:'DEV-028', section:'planned', tag:'docs',
+    title:'Docs page',
+    desc:'In-app documentation covering Hermes-app features, API endpoints, and usage guides. Per-page and per-feature articles.' },
+
+  { id:'DEV-029', section:'planned', tag:'feat',
+    title:'Chat: paste images as attachments',
+    desc:'Allow pasting images (Ctrl+V) directly into the chat input and send them as multimodal messages to Hermes.' },
+
+  { id:'DEV-030', section:'planned', tag:'idea',
+    title:'Sandbox area',
+    desc:'Isolated space where autonomous agents and cron jobs can generate and publish proposal pages without touching existing live functionality.' },
+
+  { id:'DEV-031', section:'planned', tag:'feat',
+    title:'Events/status sounds config page',
+    desc:'Map system events (idle, working, error, cron done, message received) to audio files. Play preview. Inspired by neo-app Sound Editor.' },
+
+  { id:'DEV-032', section:'planned', tag:'idea',
+    title:'Shared canvas (human + agent)',
+    desc:'Collaborative whiteboard/sketch area where human and agent can both contribute -- freehand drawing, sticky notes, diagrams.' },
+
+  { id:'DEV-033', section:'planned', tag:'feat',
+    title:'Mission Control',
+    desc:'Advanced task and mission orchestration dashboard. Track queued/active/completed missions across agents, with real-time status, logs, and pipeline view. Significantly beyond neo-app current implementation.' },
+
 ];
 
 // ── Render ────────────────────────────────────────────────────────────────────
