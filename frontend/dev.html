@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Development</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+.dev-section { margin-bottom: 32px; }
+.dev-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--dim);
+  padding: 6px 0 10px; border-bottom: 1px solid var(--border);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.dev-section-title .section-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+}
+.dot-ongoing  { background: #3fb950; }
+.dot-queue    { background: #f0883e; }
+.dot-planned  { background: #58a6ff; }
+
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  margin-bottom: 8px; transition: border-color 0.15s;
+}
+.task-item:hover { border-color: #484f58; }
+
+.task-num {
+  font-size: 11px; color: var(--dim); font-family: monospace;
+  min-width: 24px; padding-top: 1px;
+}
+.task-body { flex: 1; }
+.task-title { font-size: 13px; color: var(--text); font-weight: 500; }
+.task-desc  { font-size: 11px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+.task-tag {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 1px 8px; border-radius: 10px; margin-top: 5px;
+}
+.tag-bug    { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+.tag-feat   { background: rgba(63,185,80,.12); color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+.tag-ux     { background: rgba(88,166,255,.12); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+.tag-infra  { background: rgba(240,136,62,.12); color: #f0883e; border: 1px solid rgba(240,136,62,.3); }
+.tag-idea   { background: rgba(188,140,255,.12); color: #bc8cff; border: 1px solid rgba(188,140,255,.3); }
+
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.page-header-meta { font-size: 11px; color: var(--dim); }
+.count-badge {
+  font-size: 10px; background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1px 8px; color: var(--dim);
+}
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+  <div class="sidebar">
+    <a href="/index.html" class="sidebar-brand">
+      <span class="brand-icon">⬡</span>
+      <div>
+        <span class="brand-name">Hermes</span>
+        <span class="brand-sub">Agent Dashboard</span>
+      </div>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+      <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+      <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">System</div>
+      <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+      <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+      <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+      <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Meta</div>
+      <a href="/dev.html"><span class="nav-icon">🗺️</span> Development</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-status" id="sidebar-gw-status">
+        <span class="dot dot-yellow"></span>
+        <span id="sidebar-gw-text">Checking...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <div class="page">
+
+      <div class="page-header">
+        <div class="page-title">🗺️ Development Roadmap</div>
+        <div class="page-header-meta">
+          <span class="count-badge" id="total-count">— items</span>
+        </div>
+      </div>
+
+      <!-- ── SECTION A: Ongoing ─────────────────────────────────── -->
+      <div class="dev-section" id="section-ongoing">
+        <div class="dev-section-title">
+          <span class="section-dot dot-ongoing"></span>
+          A — Ongoing
+        </div>
+        <div id="list-ongoing"></div>
+      </div>
+
+      <!-- ── SECTION B: In Queue ────────────────────────────────── -->
+      <div class="dev-section" id="section-queue">
+        <div class="dev-section-title">
+          <span class="section-dot dot-queue"></span>
+          B — In Queue
+        </div>
+        <div id="list-queue"></div>
+      </div>
+
+      <!-- ── SECTION C: Planned / Nice To Have ─────────────────── -->
+      <div class="dev-section" id="section-planned">
+        <div class="dev-section-title">
+          <span class="section-dot dot-planned"></span>
+          C — Planned / Nice To Have
+        </div>
+        <div id="list-planned"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+
+// ── Roadmap data ──────────────────────────────────────────────────────────────
+//
+// section: 'ongoing' | 'queue' | 'planned'
+// tag:     'bug' | 'feat' | 'ux' | 'infra' | 'idea'
+//
+const ROADMAP = [
+
+  // ── A — ONGOING ────────────────────────────────────────────────
+  {
+    section: 'ongoing',
+    title: 'Initial public release prep',
+    desc: 'First commit to GitHub, README, .gitignore, repository setup under Rui-Marcelino/hermes-app.',
+    tag: 'infra',
+  },
+  {
+    section: 'ongoing',
+    title: 'Chat page: auto-scroll to latest message',
+    desc: 'Messages panel was not scrolling to bottom when new messages arrived during a live session or when resuming a session.',
+    tag: 'bug',
+  },
+  {
+    section: 'ongoing',
+    title: 'Backup script: configurable destination',
+    desc: 'Backup path was hardcoded. Script now accepts an optional argument for the destination directory, falling back to the default.',
+    tag: 'feat',
+  },
+
+  // ── B — IN QUEUE ───────────────────────────────────────────────
+  {
+    section: 'queue',
+    title: 'Remove all hardcoded personal paths',
+    desc: 'Audit all files for hardcoded /home/neo/ paths or personal data. Replace with configurable defaults suitable for public release.',
+    tag: 'infra',
+  },
+  {
+    section: 'queue',
+    title: 'Services page',
+    desc: 'Show all key systemd services (Hermes gateway, Ollama, Redis, etc.) with live status indicators. Start/stop controls as a stretch goal.',
+    tag: 'feat',
+  },
+  {
+    section: 'queue',
+    title: 'Sessions: origin tagging',
+    desc: 'Display visual badges on sessions showing whether they originated from CLI, Telegram, Cron, or the Web UI.',
+    tag: 'ux',
+  },
+  {
+    section: 'queue',
+    title: 'Cron Jobs page: full implementation',
+    desc: 'Currently a stub. Implement create, pause, resume, run-now, and delete for Hermes cron jobs via the API.',
+    tag: 'feat',
+  },
+  {
+    section: 'queue',
+    title: 'Skills page: full implementation',
+    desc: 'Currently a stub. List installed skills, allow enable/disable and browse the skills hub.',
+    tag: 'feat',
+  },
+  {
+    section: 'queue',
+    title: 'Config page: full implementation',
+    desc: 'Currently a stub. Allow viewing and editing key Hermes config.yaml values from the browser.',
+    tag: 'feat',
+  },
+
+  // ── C — PLANNED / NICE TO HAVE ─────────────────────────────────
+  {
+    section: 'planned',
+    title: 'Cost tracking dashboard',
+    desc: 'Daily/weekly/monthly spend per model, velocity ($/hour), and budget threshold alerts. Inspired by jarbas-app costs page.',
+    tag: 'feat',
+  },
+  {
+    section: 'planned',
+    title: 'Live model switcher',
+    desc: 'Dropdown to switch the active Hermes model without editing config files. Shows current model in header.',
+    tag: 'ux',
+  },
+  {
+    section: 'planned',
+    title: 'Multi-agent support: spawn and monitor agents',
+    desc: 'UI to spawn parallel Hermes agent instances (via tmux), monitor their status, and relay context between them.',
+    tag: 'idea',
+  },
+  {
+    section: 'planned',
+    title: 'Test Results page',
+    desc: 'Visual display of Ollama model benchmark results (instruction-following checks across multiple categories). Inspired by neo-app test bench.',
+    tag: 'feat',
+  },
+  {
+    section: 'planned',
+    title: 'Dark/light theme toggle',
+    desc: 'Allow users to switch between the current dark GitHub-style theme and a light variant.',
+    tag: 'ux',
+  },
+  {
+    section: 'planned',
+    title: 'Mobile-responsive layout',
+    desc: 'Sidebar collapses to a hamburger menu on small screens. Chat input remains usable on mobile.',
+    tag: 'ux',
+  },
+  {
+    section: 'planned',
+    title: 'Lessons Learned / Notes page',
+    desc: 'A simple markdown-based notes area for capturing agent interaction insights, post-mortems, and hard-won lessons.',
+    tag: 'idea',
+  },
+];
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function tagLabel(tag) {
+  const map = {
+    bug:   'Bug Fix',
+    feat:  'Feature',
+    ux:    'UX',
+    infra: 'Infrastructure',
+    idea:  'Idea',
+  };
+  return map[tag] || tag;
+}
+
+function renderSection(sectionId, items) {
+  const container = document.getElementById('list-' + sectionId);
+  if (!container) return;
+  container.innerHTML = '';
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'task-item';
+    div.innerHTML = `
+      <div class="task-num">#${i + 1}</div>
+      <div class="task-body">
+        <div class="task-title">${escHtml(item.title)}</div>
+        ${item.desc ? `<div class="task-desc">${escHtml(item.desc)}</div>` : ''}
+        <span class="task-tag tag-${item.tag}">${tagLabel(item.tag)}</span>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
+function init() {
+  const ongoing = ROADMAP.filter(i => i.section === 'ongoing');
+  const queue   = ROADMAP.filter(i => i.section === 'queue');
+  const planned = ROADMAP.filter(i => i.section === 'planned');
+
+  renderSection('ongoing', ongoing);
+  renderSection('queue',   queue);
+  renderSection('planned', planned);
+
+  const total = ROADMAP.length;
+  document.getElementById('total-count').textContent = total + ' items';
+
+  // Sidebar gateway status
+  fetch('/api/status').then(r => r.json()).then(d => {
+    const dot = document.querySelector('#sidebar-gw-status .dot');
+    const txt = document.getElementById('sidebar-gw-text');
+    if (d.gateway && d.gateway.running) {
+      if (dot) dot.className = 'dot dot-green';
+      if (txt) txt.textContent = 'Gateway running';
+    } else {
+      if (dot) dot.className = 'dot dot-red';
+      if (txt) txt.textContent = 'Gateway stopped';
+    }
+  }).catch(() => {});
+}
+
+init();
+</script>
+</body>
+</html>

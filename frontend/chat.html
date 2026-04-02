@@ -1,1 +1,804 @@
-File unchanged since last read. The content from the earlier read_file result in this conversation is still current — refer to that instead of re-reading.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Chat</title>
+<link rel="stylesheet" href="/css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+body { overflow:hidden; }
+.main-wrap.fullheight { display:flex; flex-direction:column; }
+
+/* Chat layout */
+.chat-wrap { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.chat-toolbar { padding:6px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; background:var(--card); font-size:12px; }
+.messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+.input-area { border-top:1px solid var(--border); padding:12px 16px; background:var(--card); }
+
+/* Messages */
+.msg { max-width:84%; display:flex; flex-direction:column; }
+.msg-user { align-self:flex-end; }
+.msg-assistant { align-self:flex-start; }
+.msg-system-wrap { align-self:center; }
+
+.bubble { padding:10px 14px; border-radius:12px; line-height:1.6; font-size:13px; position:relative; }
+.bubble-user { background:#1e3a5f; color:#e0e7ff; border-bottom-right-radius:3px; }
+.bubble-assistant { background:#1f2937; color:#e5e7eb; border-bottom-left-radius:3px; }
+.bubble-system { background:var(--card2); color:var(--dim); font-size:11px; border-radius:20px; padding:4px 14px; }
+
+.msg-meta { font-size:10px; color:var(--dim); margin-top:3px; display:flex; align-items:center; gap:8px; }
+.msg-user .msg-meta { justify-content:flex-end; }
+
+.copy-btn { background:none; border:1px solid var(--border); color:var(--dim); padding:1px 7px; border-radius:3px; font-size:10px; cursor:pointer; }
+.copy-btn:hover { color:var(--text); background:var(--card2); }
+.tts-btn { background:none; border:1px solid var(--border); color:var(--dim); padding:1px 7px; border-radius:3px; font-size:10px; cursor:pointer; }
+.tts-btn:hover { color:#4ade80; background:var(--card2); }
+.tts-btn.playing { color:#4ade80; border-color:#4ade80; }
+
+/* Tool calls */
+.tool-block { align-self:flex-start; max-width:84%; background:#1c1917; border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:12px; }
+.tool-hdr { padding:6px 12px; background:var(--card2); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
+.tool-hdr:hover { background:#2d333b; }
+.tool-name { color:var(--orange); font-weight:500; }
+.tool-toggle { color:var(--dim); font-size:10px; }
+.tool-body { padding:10px 12px; white-space:pre-wrap; font-family:monospace; font-size:11px; color:#d6d3d1; max-height:320px; overflow-y:auto; display:none; }
+.tool-body.open { display:block; }
+
+/* Thinking / streaming cursor */
+.thinking { color:var(--dim); font-size:12px; display:flex; align-items:center; gap:6px; padding:8px 0; }
+.cursor { display:inline-block; width:8px; height:14px; background:var(--blue); border-radius:1px; animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Markdown in messages */
+.bubble p { margin-bottom:6px; }
+.bubble p:last-child { margin-bottom:0; }
+.bubble code { background:rgba(0,0,0,.35); padding:1px 5px; border-radius:3px; font-size:12px; }
+.bubble pre { background:rgba(0,0,0,.35); padding:10px; border-radius:6px; overflow-x:auto; margin:8px 0; font-size:11px; }
+.bubble ul, .bubble ol { padding-left:18px; margin-bottom:6px; }
+.bubble h1,.bubble h2,.bubble h3 { margin:8px 0 4px; color:var(--text); }
+.bubble a { color:var(--blue); }
+.bubble table { width:auto; margin:6px 0; }
+.bubble th,.bubble td { border:1px solid var(--border); padding:4px 8px; }
+
+/* Input box */
+.input-row { display:flex; gap:8px; align-items:flex-end; }
+#userInput {
+  flex:1;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  font-size:13px;
+  font-family: inherit;
+  padding:9px 12px;
+  resize:none;
+  min-height:40px;
+  max-height:160px;
+  overflow-y:auto;
+  line-height:1.5;
+  outline:none;
+  transition:border-color 0.15s;
+}
+#userInput:focus { border-color:#484f58; }
+#userInput::placeholder { color:var(--dim); }
+.send-btn {
+  background:#238636;
+  border:1px solid #238636;
+  color:#fff;
+  border-radius:8px;
+  padding:9px 16px;
+  font-size:13px;
+  cursor:pointer;
+  transition:background 0.15s;
+  white-space:nowrap;
+  height:40px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.send-btn:hover { background:#2ea043; }
+.send-btn:disabled { background:#21262d; border-color:var(--border); color:var(--dim); cursor:not-allowed; }
+.input-hint { font-size:10px; color:var(--dim); margin-top:5px; text-align:right; }
+
+/* Offline banner */
+.offline-banner { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); border-radius:6px; padding:8px 12px; font-size:12px; color:var(--red); display:none; margin-bottom:8px; }
+
+/* Resume banner */
+.resume-banner { background:rgba(188,140,255,0.08); border:1px solid rgba(188,140,255,0.3); border-radius:6px; padding:8px 12px; font-size:12px; color:var(--purple); display:none; margin-bottom:8px; line-height:1.5; }
+
+/* Model display */
+.model-tag { font-size:11px; color:var(--dim); background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:2px 8px; }
+
+/* Info bar */
+.info-bar { padding:4px 16px; border-bottom:1px solid var(--border); background:#0d1117; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--dim); flex-wrap:wrap; }
+.info-pill { display:inline-flex; align-items:center; gap:4px; background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:1px 8px; white-space:nowrap; }
+.info-pill .pill-label { color:#6e7681; }
+.info-pill .pill-val { color:var(--text); font-family:monospace; }
+.info-pill.ctx-high .pill-val { color:var(--orange); }
+.info-pill.ctx-crit .pill-val { color:var(--red); }
+</style>
+</head>
+<body>
+<div class="app-layout">
+<div class="sidebar">
+  <a href="/index.html" class="sidebar-brand">
+    <span class="brand-icon">⬡</span>
+    <div>
+      <span class="brand-name">Hermes</span>
+      <span class="brand-sub">Agent Dashboard</span>
+    </div>
+  </a>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <a href="/index.html"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/chat.html"><span class="nav-icon">💬</span> Chat</a>
+    <a href="/sessions.html"><span class="nav-icon">📋</span> Sessions</a>
+    <a href="/diary.html"><span class="nav-icon">📓</span> Diary</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">System</div>
+    <a href="/cron.html"><span class="nav-icon">⏰</span> Cron Jobs</a>
+    <a href="/skills.html"><span class="nav-icon">🧩</span> Skills</a>
+    <a href="/config.html"><span class="nav-icon">⚙️</span> Config</a>
+    <a href="/scripts.html"><span class="nav-icon">🛠️</span> Scripts</a>
+  </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Meta</div>
+      <a href="/dev.html"><span class="nav-icon">🗺️</span> Development</a>
+    </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-status" id="sidebar-gw-status">
+      <span class="dot dot-yellow"></span>
+      <span id="sidebar-gw-text">Checking...</span>
+    </div>
+  </div>
+</div>
+<div class="main-wrap fullheight">
+
+
+<div class="chat-wrap">
+  <div class="chat-toolbar">
+    <span style="color:var(--dim)">Conversation:</span>
+    <span id="conv-id" style="color:var(--blue);font-family:monospace;font-size:11px;">new</span>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="newChat()">＋ New chat</button>
+    <button class="btn" onclick="copyAll()">Copy all</button>
+  </div>
+
+  <div class="info-bar" id="info-bar">
+    <span class="info-pill">
+      <span class="pill-label">agent</span>
+      <span class="pill-val">Hermes</span>
+    </span>
+    <span class="info-pill" id="pill-model">
+      <span class="pill-label">model</span>
+      <span class="pill-val" id="info-model">—</span>
+    </span>
+    <span class="info-pill" id="pill-ctx">
+      <span class="pill-label">ctx</span>
+      <span class="pill-val" id="info-ctx">0 tokens</span>
+    </span>
+    <div style="flex:1"></div>
+    <span class="info-pill">
+      <span class="pill-val" id="info-clock">—</span>
+    </span>
+  </div>
+
+  <div class="messages" id="messages">
+    <div style="align-self:center; text-align:center; padding:40px 20px; color:var(--dim); max-width:400px;">
+      <div style="font-size:32px; margin-bottom:12px;">⬡</div>
+      <div style="font-size:14px; color:var(--text); margin-bottom:8px;">Hermes Agent</div>
+      <div style="font-size:12px; line-height:1.6;">Ask me anything. I have access to your terminal, files, web search, and more.</div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="offline-banner" id="offline-banner">
+      ⚠ Hermes API server is not reachable. Go to <a href="/index.html" style="color:var(--red)">Dashboard</a> and restart the gateway.
+    </div>
+    <div class="resume-banner" id="resume-banner">
+      ⚠ Note: this will create a <strong>new session</strong> continuing from the loaded history. The original session is read-only and unchanged.
+    </div>
+    <div class="resume-banner" id="continue-banner" style="display:none; background:rgba(63,185,80,0.06); border-color:rgba(63,185,80,0.3); color:var(--green);">
+      💾 Continuing previous web conversation — your history is preserved on the server. Use <strong>＋ New chat</strong> to start fresh.
+    </div>
+    <div class="input-row">
+      <textarea
+        id="userInput"
+        placeholder="Message Hermes… (Enter to send, Shift+Enter for new line)"
+        rows="1"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <span>Send</span> <span style="font-size:16px;">↑</span>
+      </button>
+    </div>
+    <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/shared.js"></script>
+<script>
+marked.setOptions({ breaks: true, gfm: true });
+
+let conversationHistory = [];
+let isStreaming = false;
+let apiOnline = false;
+let currentConversation = null;  // server-side named conversation (responses API)
+let isResumeMode = false;        // true when loaded via ?resume=
+let currentModel = '';           // displayed in info bar
+let ctxLimit = 200000;           // default context window size (tokens)
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await checkApi();
+  loadModel();
+  startClock();
+  setupInput();
+  // Resume mode takes priority over normal persistence
+  const params = new URLSearchParams(window.location.search);
+  const resumeId = params.get('resume');
+  if (resumeId) {
+    isResumeMode = true;
+    await loadResumeSession(resumeId);
+  } else {
+    // Check localStorage for an existing web conversation to continue
+    const saved = localStorage.getItem('hermes_conversation');
+    if (saved) {
+      currentConversation = saved;
+      document.getElementById('conv-id').textContent = saved;
+      showContinueBanner(saved);
+    }
+  }
+}
+
+async function loadResumeSession(sessionId) {
+  try {
+    const r = await fetch(`/api/session/${sessionId}`);
+    if (!r.ok) { toast('Could not load session', 'red'); return; }
+    const d = await r.json();
+
+    const session = d.session;
+    const messages = d.messages || [];
+
+    // Only inject user + assistant messages with non-empty content
+    // Filter out tool calls, system messages -- they would break the API
+    const history = messages
+      .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content)
+      .map(m => ({ role: m.role, content: safeContent(m.content) }));
+
+    if (history.length === 0) { toast('Session has no resumable messages', 'blue'); return; }
+
+    conversationHistory = history;
+
+    // Update toolbar
+    document.getElementById('conv-id').textContent = 'resumed';
+
+    // Clear welcome screen and render history
+    const msgs = document.getElementById('messages');
+    msgs.innerHTML = '';
+
+    // Show a divider at the top explaining the context
+    const divider = document.createElement('div');
+    divider.id = 'resume-divider';
+    divider.style.cssText = 'text-align:center;padding:10px 20px;color:var(--dim);font-size:11px;border:1px dashed var(--border);border-radius:6px;max-width:420px;line-height:1.6;margin:0 auto 8px;';
+    const title = session.title || sessionId;
+    const src = session.source || 'unknown';
+    const date = session.started_at ? new Date(session.started_at * 1000).toLocaleString() : '';
+    divider.innerHTML = `📋 Resumed from: <strong style="color:var(--text)">${escHtml(title)}</strong><br>
+      <span style="opacity:0.7">${src} · ${date} · ${history.length} messages loaded</span>`;
+    msgs.appendChild(divider);
+
+    // Render each message as a bubble (read-only history)
+    history.forEach(m => {
+      if (m.role === 'user') {
+        appendUserMessage(m.content);
+        // appendUserMessage already pushed to conversationHistory via sendMessage
+        // But we built conversationHistory above, so just render visually
+      } else {
+        renderHistoryAssistant(m.content);
+      }
+    });
+
+    // conversationHistory was set above -- remove any duplicates from appendUserMessage
+    // appendUserMessage does NOT push to history, only sendMessage does -- we're safe
+
+    // Show resume banner
+    document.getElementById('resume-banner').style.display = 'block';
+
+    // Scroll to bottom
+    scrollToBottom();
+
+    toast(`Resumed: ${history.length} messages loaded`, 'green');
+
+  } catch(e) {
+    toast('Error loading session: ' + e.message, 'red');
+  }
+}
+
+
+function scrollToBottom() {
+  const el = document.getElementById('messages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function safeContent(c) {
+  if (!c) return '';
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.map(p => (typeof p === 'string' ? p : (p.text || ''))).join('');
+  return JSON.stringify(c);
+}
+
+async function playTTS(text, btn) {
+  if (btn._audio) {
+    btn._audio.pause();
+    btn._audio = null;
+    btn.textContent = '🔊';
+    btn.classList.remove('playing');
+    return;
+  }
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    if (!resp.ok) { toast('TTS failed: ' + resp.status, 'red'); btn.textContent = '🔊'; btn.disabled = false; return; }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    btn._audio = audio;
+    btn.textContent = '⏹';
+    btn.classList.add('playing');
+    btn.disabled = false;
+    audio.onended = () => { btn._audio = null; btn.textContent = '🔊'; btn.classList.remove('playing'); URL.revokeObjectURL(url); };
+    audio.onerror = () => { btn._audio = null; btn.textContent = '🔊'; btn.classList.remove('playing'); toast('Audio playback error', 'red'); };
+    audio.play();
+  } catch(e) { toast('TTS error: ' + e.message, 'red'); btn.textContent = '🔊'; btn.disabled = false; }
+}
+
+function renderHistoryAssistant(content) {
+  const msgs = document.getElementById('messages');
+  const id = 'hist-' + Math.random().toString(36).slice(2);
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg-assistant';
+  const ttsId = 'tts-hist-' + Math.random().toString(36).slice(2);
+  wrap.innerHTML = `<div class="bubble bubble-assistant" style="opacity:0.75;">${marked.parse(content)}</div>
+    <div class="msg-meta">
+      <span style="color:var(--purple);font-size:10px;">📋 history</span>
+      <button class="tts-btn" id="${ttsId}">🔊</button>
+      <button class="copy-btn" onclick="copyText(${JSON.stringify(content)}, this)">Copy</button>
+    </div>`;
+  wrap.querySelector('#' + ttsId).onclick = function() { playTTS(content, this); };
+  msgs.appendChild(wrap);
+  scrollToBottom();
+}
+
+async function checkApi() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    apiOnline = d.api_server?.alive === true;
+    document.getElementById('offline-banner').style.display = apiOnline ? 'none' : 'block';
+    document.getElementById('sendBtn').disabled = !apiOnline;
+  } catch(e) {
+    apiOnline = false;
+    document.getElementById('offline-banner').style.display = 'block';
+    document.getElementById('sendBtn').disabled = true;
+  }
+}
+
+async function loadModel() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const raw = d.model || '';
+    // raw is like "auto / anthropic/claude-sonnet-4-6"
+    // Extract just the model name after the last "/"
+    const parts = raw.split('/');
+    currentModel = parts[parts.length - 1].trim() || raw;
+    document.getElementById('info-model').textContent = currentModel;
+    // Set context limit based on known models
+    if (currentModel.includes('claude')) ctxLimit = 200000;
+    else if (currentModel.includes('gpt-4')) ctxLimit = 128000;
+    else if (currentModel.includes('gpt-3')) ctxLimit = 16385;
+    else ctxLimit = 128000; // safe default
+    updateCtx();
+  } catch(e) {}
+}
+
+function updateCtx() {
+  // Estimate tokens from conversation history (~4 chars per token)
+  const totalChars = conversationHistory.reduce((sum, m) => {
+    const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '');
+    return sum + c.length;
+  }, 0);
+  const estTokens=Math.r...hars / 4);
+  const pct = ctxLimit > 0 ? (estTokens / ctxLimit) : 0;
+
+  const el = document.getElementById('info-ctx');
+  const pill = document.getElementById('pill-ctx');
+  if (!el) return;
+
+  let label;
+  if (estTokens >= 1000) {
+    label = (estTokens / 1000).toFixed(1) + 'k / ' + (ctxLimit / 1000).toFixed(0) + 'k';
+  } else {
+    label = estTokens + ' / ' + ctxLimit;
+  }
+  label += ' (' + Math.round(pct * 100) + '%)';
+  el.textContent = label;
+
+  pill.classList.remove('ctx-high', 'ctx-crit');
+  if (pct >= 0.85) pill.classList.add('ctx-crit');
+  else if (pct >= 0.65) pill.classList.add('ctx-high');
+}
+
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    const el = document.getElementById('info-clock');
+    if (el) el.textContent = h + ':' + m + ':' + s;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+function setupInput() {
+  const ta = document.getElementById('userInput');
+
+  // Auto-resize textarea
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+  });
+
+  // Enter = send, Shift+Enter = newline
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!isStreaming && apiOnline) sendMessage();
+    }
+  });
+
+  ta.focus();
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const ta = document.getElementById('userInput');
+  const text = ta.value.trim();
+  if (!text || isStreaming) return;
+
+  ta.value = '';
+  ta.style.height = 'auto';
+
+  appendUserMessage(text);
+
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const assistantId = 'msg-' + Date.now();
+  appendThinking(assistantId);
+
+  try {
+    if (isResumeMode) {
+      // Resume mode: streaming via /api/chat (existing path), history already loaded
+      conversationHistory.push({ role: 'user', content: text });
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory, stream: true }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        removeThinking(assistantId);
+        appendSystemMsg('Error: ' + (err.error || response.statusText));
+        return;
+      }
+      await readStream(response, assistantId);
+    } else {
+      // Normal mode: stateful named conversation via /api/chat/responses
+      await sendViaResponses(text, assistantId);
+    }
+  } catch(e) {
+    removeThinking(assistantId);
+    appendSystemMsg('Error: ' + e.message);
+  } finally {
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('userInput').focus();
+  }
+}
+
+async function sendViaResponses(text, assistantId) {
+  // Generate a conversation name on first message if none exists
+  if (!currentConversation) {
+    currentConversation = 'web-' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('hermes_conversation', currentConversation);
+    document.getElementById('conv-id').textContent = currentConversation;
+    // Hide continue banner if showing, show persist indicator
+    document.getElementById('continue-banner').style.display = 'none';
+  }
+
+  const r = await fetch('/api/chat/responses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input: text, conversation: currentConversation }),
+  });
+
+  const d = await r.json();
+  removeThinking(assistantId);
+
+  if (!r.ok) {
+    // If conversation was evicted (404), clear and let user retry
+    if (r.status === 404) {
+      localStorage.removeItem('hermes_conversation');
+      currentConversation = null;
+      document.getElementById('conv-id').textContent = 'new';
+      appendSystemMsg('Previous conversation expired (server storage limit). Starting fresh — please resend your message.');
+    } else {
+      appendSystemMsg('Error: ' + (d.error || r.statusText));
+    }
+    return;
+  }
+
+  // Extract assistant text from output array
+  const output = d.output || [];
+  let replyText = '';
+  for (const item of output) {
+    if (item.type === 'message' && item.role === 'assistant') {
+      const parts = item.content || [];
+      replyText = parts.map(p => p.text || '').join('');
+      break;
+    }
+  }
+
+  if (replyText) {
+    createAssistantBubble(assistantId);
+    finalizeAssistantBubble(assistantId, replyText);
+    // Keep local history in sync for copyAll()
+    conversationHistory.push({ role: 'user', content: text });
+    conversationHistory.push({ role: 'assistant', content: replyText });
+    updateCtx();
+  } else {
+    appendSystemMsg('No response received.');
+  }
+
+  scrollToBottom();
+}
+
+async function readStream(response, assistantId) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+  let toolCalls = {};
+  let bubbleCreated = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n');
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') break;
+
+      let parsed;
+      try { parsed = JSON.parse(data); } catch(e) { continue; }
+
+      if (parsed.error) {
+        removeThinking(assistantId);
+        appendSystemMsg('Error: ' + parsed.error.message || parsed.error);
+        return;
+      }
+
+      const choice = parsed.choices?.[0];
+      if (!choice) continue;
+
+      const delta = choice.delta || {};
+
+      // Tool call accumulation
+      if (delta.tool_calls) {
+        for (const tc of delta.tool_calls) {
+          const idx = tc.index ?? 0;
+          if (!toolCalls[idx]) toolCalls[idx] = { name: '', arguments: '' };
+          if (tc.function?.name) toolCalls[idx].name += tc.function.name;
+          if (tc.function?.arguments) toolCalls[idx].arguments += tc.function.arguments;
+        }
+      }
+
+      // Text content
+      if (delta.content) {
+        fullText += delta.content;
+        if (!bubbleCreated) {
+          removeThinking(assistantId);
+          createAssistantBubble(assistantId);
+          bubbleCreated = true;
+        }
+        updateAssistantBubble(assistantId, fullText);
+      }
+
+      // Finish
+      if (choice.finish_reason === 'stop' || choice.finish_reason === 'tool_calls') {
+        break;
+      }
+    }
+  }
+
+  // Finalize
+  if (!bubbleCreated) removeThinking(assistantId);
+
+  // Render any tool calls
+  const tcList = Object.values(toolCalls);
+  if (tcList.length > 0) {
+    tcList.forEach(tc => appendToolCall(tc.name, tc.arguments));
+  }
+
+  if (fullText) {
+    conversationHistory.push({ role: 'assistant', content: fullText });
+    finalizeAssistantBubble(assistantId, fullText);
+    updateCtx();
+  }
+
+  scrollToBottom();
+}
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function appendUserMessage(text) {
+  const msgs = document.getElementById('messages');
+  // Clear welcome screen on first message
+  const welcome = msgs.querySelector('div[style*="align-self:center"]');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = 'msg msg-user';
+  const escaped = escHtml(text).replace(/\n/g, '<br>');
+  div.innerHTML = `<div class="bubble bubble-user">${escaped}</div>
+    <div class="msg-meta">
+      <span>${fmtTime(Date.now()/1000)}</span>
+      <button class="copy-btn" onclick="copyText(${JSON.stringify(text)}, this)">Copy</button>
+    </div>`;
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+function appendThinking(id) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'thinking';
+  div.innerHTML = '<span class="cursor"></span> Thinking...';
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+function removeThinking(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function createAssistantBubble(id) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg-assistant';
+  wrap.id = id;
+  wrap.innerHTML = `<div class="bubble bubble-assistant" id="${id}-bubble"></div>
+    <div class="msg-meta" id="${id}-meta" style="display:none">
+      <span id="${id}-ts"></span>
+      <button class="tts-btn" id="${id}-tts">🔊</button>
+      <button class="copy-btn" id="${id}-copy">Copy</button>
+    </div>`;
+  msgs.appendChild(wrap);
+}
+
+function updateAssistantBubble(id, text) {
+  const bubble = document.getElementById(`${id}-bubble`);
+  if (bubble) {
+    bubble.innerHTML = marked.parse(text) + '<span class="cursor" style="margin-left:2px"></span>';
+    scrollToBottom();
+  }
+}
+
+function finalizeAssistantBubble(id, text) {
+  const bubble = document.getElementById(`${id}-bubble`);
+  if (bubble) bubble.innerHTML = marked.parse(text);
+
+  const meta = document.getElementById(`${id}-meta`);
+  if (meta) meta.style.display = 'flex';
+
+  const ts = document.getElementById(`${id}-ts`);
+  if (ts) ts.textContent = fmtTime(Date.now()/1000);
+
+  const copyBtn = document.getElementById(`${id}-copy`);
+  if (copyBtn) copyBtn.onclick = () => copyText(text, copyBtn);
+
+  const ttsBtn = document.getElementById(`${id}-tts`);
+  if (ttsBtn) ttsBtn.onclick = function() { playTTS(text, this); };
+}
+
+function appendToolCall(name, args) {
+  const msgs = document.getElementById('messages');
+  let prettyArgs = args;
+  try { prettyArgs = JSON.stringify(JSON.parse(args), null, 2); } catch(e) {}
+  const div = document.createElement('div');
+  div.className = 'tool-block';
+  div.innerHTML = `<div class="tool-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+    <span class="tool-name">⚡ ${escHtml(name)}</span>
+    <span class="tool-toggle">▼ arguments</span>
+  </div>
+  <div class="tool-body">${escHtml(prettyArgs)}</div>`;
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+function appendSystemMsg(text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-system-wrap';
+  div.innerHTML = `<div class="bubble bubble-system">${escHtml(text)}</div>`;
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+function showContinueBanner(name) {
+  document.getElementById('continue-banner').style.display = 'block';
+}
+
+function newChat() {
+  // Clear all state
+  conversationHistory = [];
+  currentConversation = null;
+  isResumeMode = false;
+  localStorage.removeItem('hermes_conversation');
+  updateCtx();
+
+  document.getElementById('messages').innerHTML = `
+    <div style="align-self:center; text-align:center; padding:40px 20px; color:var(--dim); max-width:400px;">
+      <div style="font-size:32px; margin-bottom:12px;">⬡</div>
+      <div style="font-size:14px; color:var(--text); margin-bottom:8px;">Hermes Agent</div>
+      <div style="font-size:12px; line-height:1.6;">Ask me anything. I have access to your terminal, files, web search, and more.</div>
+    </div>`;
+  document.getElementById('conv-id').textContent = 'new';
+  document.getElementById('resume-banner').style.display = 'none';
+  document.getElementById('continue-banner').style.display = 'none';
+  document.getElementById('userInput').focus();
+  window.history.replaceState({}, '', '/chat.html');
+  toast('New conversation started', 'blue', 1500);
+}
+
+function copyAll() {
+  if (conversationHistory.length === 0) { toast('Nothing to copy', 'blue', 1500); return; }
+  const text = conversationHistory.map(m => `[${m.role.toUpperCase()}]\n${m.content}`).join('\n\n---\n\n');
+  copyText(text, null);
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</div><!-- main-wrap -->
+</div><!-- app-layout -->
+</body>
+</html>

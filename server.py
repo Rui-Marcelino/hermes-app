@@ -132,6 +132,11 @@ def page_config():
 def page_scripts():
     return send_from_directory(FRONTEND_DIR, 'scripts.html')
 
+@app.route('/dev')
+@app.route('/dev.html')
+def dev():
+    return send_from_directory(FRONTEND_DIR, 'dev.html')
+
 @app.route('/diary')
 @app.route('/diary.html')
 def page_diary():
