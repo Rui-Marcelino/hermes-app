@@ -3,69 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hermes — Development</title>
+<title>Hermes — Dev Roadmap</title>
 <link rel="stylesheet" href="/css/styles.css">
 <style>
-.dev-section { margin-bottom: 32px; }
-.dev-section-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .8px; color: var(--dim);
-  padding: 6px 0 10px; border-bottom: 1px solid var(--border);
-  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-}
-.dev-section-title .section-dot {
-  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-}
-.dot-ongoing  { background: #3fb950; }
-.dot-queue    { background: #f0883e; }
-.dot-planned  { background: #58a6ff; }
+.dev-section { margin-bottom: 20px; }
 
-.task-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 11px 14px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--card);
-  margin-bottom: 8px; transition: border-color 0.15s;
+.section-hdr {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; padding: 5px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
 }
-.task-item:hover { border-color: #484f58; }
+.s-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.s-done    { background:#3fb950; }
+.s-active  { background:#f0883e; }
+.s-queued  { background:#58a6ff; }
+.s-planned { background:#bc8cff; }
 
-.task-num {
-  font-size: 11px; color: var(--dim); font-family: monospace;
-  min-width: 24px; padding-top: 1px;
+.section-hdr .s-count {
+  margin-left: auto; font-size:10px;
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:8px; padding:0 7px; color:var(--dim); font-weight:400;
 }
-.task-body { flex: 1; }
-.task-title { font-size: 13px; color: var(--text); font-weight: 500; }
-.task-desc  { font-size: 11px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
-.task-tag {
-  display: inline-block; font-size: 10px; font-weight: 600;
-  padding: 1px 8px; border-radius: 10px; margin-top: 5px;
-}
-.tag-bug    { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
-.tag-feat   { background: rgba(63,185,80,.12); color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
-.tag-ux     { background: rgba(88,166,255,.12); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
-.tag-infra  { background: rgba(240,136,62,.12); color: #f0883e; border: 1px solid rgba(240,136,62,.3); }
-.tag-idea   { background: rgba(188,140,255,.12); color: #bc8cff; border: 1px solid rgba(188,140,255,.3); }
 
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 22px;
+/* Compact table-style rows */
+.item-row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  font-size: 12px;
+  transition: background 0.1s, border-color 0.1s;
 }
-.page-header-meta { font-size: 11px; color: var(--dim); }
-.count-badge {
-  font-size: 10px; background: var(--card2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 1px 8px; color: var(--dim);
+.item-row:hover { background: var(--card); border-color: var(--border); }
+
+.item-id {
+  font-family: monospace; font-size: 10px;
+  color: var(--dim); white-space: nowrap;
+}
+.item-title { color: var(--text); line-height: 1.4; }
+.item-desc {
+  grid-column: 2 / 3;
+  font-size: 11px; color: var(--dim); margin-top: -2px; line-height: 1.4;
+}
+.item-tag {
+  font-size: 10px; font-weight: 600;
+  padding: 1px 7px; border-radius: 8px; white-space: nowrap;
+  align-self: start;
+}
+.tag-bug    { background:rgba(248,81,73,.15);  color:#f85149; border:1px solid rgba(248,81,73,.25); }
+.tag-feat   { background:rgba(63,185,80,.12);  color:#3fb950; border:1px solid rgba(63,185,80,.25); }
+.tag-ux     { background:rgba(88,166,255,.12); color:#58a6ff; border:1px solid rgba(88,166,255,.25); }
+.tag-infra  { background:rgba(240,136,62,.12); color:#f0883e; border:1px solid rgba(240,136,62,.25); }
+.tag-idea   { background:rgba(188,140,255,.12);color:#bc8cff; border:1px solid rgba(188,140,255,.25); }
+.tag-docs   { background:rgba(139,148,158,.12);color:#8b949e; border:1px solid rgba(139,148,158,.25); }
+
+/* done rows are dimmed */
+.section-done .item-row { opacity: 0.65; }
+.section-done .item-row:hover { opacity: 1; }
+
+.page-hdr {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+}
+.page-hdr-right { font-size:11px; color:var(--dim); display:flex; gap:10px; }
+.total-pill {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:10px; padding:1px 10px; font-size:10px; color:var(--dim);
 }
 </style>
 </head>
 <body>
 <div class="app-layout">
-
   <div class="sidebar">
     <a href="/index.html" class="sidebar-brand">
       <span class="brand-icon">⬡</span>
-      <div>
-        <span class="brand-name">Hermes</span>
-        <span class="brand-sub">Agent Dashboard</span>
-      </div>
+      <div><span class="brand-name">Hermes</span><span class="brand-sub">Agent Dashboard</span></div>
     </a>
     <div class="sidebar-section">
       <div class="sidebar-label">Main</div>
@@ -96,208 +112,162 @@
   <div class="main-wrap">
     <div class="page">
 
-      <div class="page-header">
-        <div class="page-title">🗺️ Development Roadmap</div>
-        <div class="page-header-meta">
-          <span class="count-badge" id="total-count">— items</span>
+      <div class="page-hdr">
+        <div class="page-title">🗺️ Dev Roadmap</div>
+        <div class="page-hdr-right">
+          <span class="total-pill" id="total-pill">— items</span>
         </div>
       </div>
 
-      <!-- ── SECTION A: Ongoing ─────────────────────────────────── -->
-      <div class="dev-section" id="section-ongoing">
-        <div class="dev-section-title">
-          <span class="section-dot dot-ongoing"></span>
-          A — Ongoing
-        </div>
-        <div id="list-ongoing"></div>
-      </div>
-
-      <!-- ── SECTION B: In Queue ────────────────────────────────── -->
-      <div class="dev-section" id="section-queue">
-        <div class="dev-section-title">
-          <span class="section-dot dot-queue"></span>
-          B — In Queue
-        </div>
-        <div id="list-queue"></div>
-      </div>
-
-      <!-- ── SECTION C: Planned / Nice To Have ─────────────────── -->
-      <div class="dev-section" id="section-planned">
-        <div class="dev-section-title">
-          <span class="section-dot dot-planned"></span>
-          C — Planned / Nice To Have
-        </div>
-        <div id="list-planned"></div>
-      </div>
+      <div class="dev-section section-done"  id="sec-done"></div>
+      <div class="dev-section section-active" id="sec-active"></div>
+      <div class="dev-section section-queued" id="sec-queued"></div>
+      <div class="dev-section section-planned" id="sec-planned"></div>
 
     </div>
   </div>
-
 </div>
 
 <div id="toast-container"></div>
 <script src="/js/shared.js"></script>
 <script>
 
-// ── Roadmap data ──────────────────────────────────────────────────────────────
-//
-// section: 'ongoing' | 'queue' | 'planned'
-// tag:     'bug' | 'feat' | 'ux' | 'infra' | 'idea'
-//
+// ── Roadmap data ─────────────────────────────────────────────────────────────
+// section : 'done' | 'active' | 'queued' | 'planned'
+// tag     : 'bug' | 'feat' | 'ux' | 'infra' | 'idea' | 'docs'
+
 const ROADMAP = [
 
-  // ── A — ONGOING ────────────────────────────────────────────────
-  {
-    section: 'ongoing',
-    title: 'Initial public release prep',
-    desc: 'First commit to GitHub, README, .gitignore, repository setup under Rui-Marcelino/hermes-app.',
-    tag: 'infra',
-  },
-  {
-    section: 'ongoing',
-    title: 'Chat page: auto-scroll to latest message',
-    desc: 'Messages panel was not scrolling to bottom when new messages arrived during a live session or when resuming a session.',
-    tag: 'bug',
-  },
-  {
-    section: 'ongoing',
-    title: 'Backup script: configurable destination',
-    desc: 'Backup path was hardcoded. Script now accepts an optional argument for the destination directory, falling back to the default.',
-    tag: 'feat',
-  },
+  // ── DONE ──────────────────────────────────────────────────────────────────
+  { id:'DEV-001', section:'done', tag:'infra',
+    title:'Initial GitHub repo + first public commit',
+    desc:'README, .gitignore, repository under Rui-Marcelino/hermes-app.' },
 
-  // ── B — IN QUEUE ───────────────────────────────────────────────
-  {
-    section: 'queue',
-    title: 'Remove all hardcoded personal paths',
-    desc: 'Audit all files for hardcoded /home/neo/ paths or personal data. Replace with configurable defaults suitable for public release.',
-    tag: 'infra',
-  },
-  {
-    section: 'queue',
-    title: 'Services page',
-    desc: 'Show all key systemd services (Hermes gateway, Ollama, Redis, etc.) with live status indicators. Start/stop controls as a stretch goal.',
-    tag: 'feat',
-  },
-  {
-    section: 'queue',
-    title: 'Sessions: origin tagging',
-    desc: 'Display visual badges on sessions showing whether they originated from CLI, Telegram, Cron, or the Web UI.',
-    tag: 'ux',
-  },
-  {
-    section: 'queue',
-    title: 'Cron Jobs page: full implementation',
-    desc: 'Currently a stub. Implement create, pause, resume, run-now, and delete for Hermes cron jobs via the API.',
-    tag: 'feat',
-  },
-  {
-    section: 'queue',
-    title: 'Skills page: full implementation',
-    desc: 'Currently a stub. List installed skills, allow enable/disable and browse the skills hub.',
-    tag: 'feat',
-  },
-  {
-    section: 'queue',
-    title: 'Config page: full implementation',
-    desc: 'Currently a stub. Allow viewing and editing key Hermes config.yaml values from the browser.',
-    tag: 'feat',
-  },
+  { id:'DEV-002', section:'done', tag:'infra',
+    title:'Backup script: configurable destination',
+    desc:'Script now accepts optional arg for destination dir, defaults to ~/Downloads/Backups_Hermes.' },
 
-  // ── C — PLANNED / NICE TO HAVE ─────────────────────────────────
-  {
-    section: 'planned',
-    title: 'Cost tracking dashboard',
-    desc: 'Daily/weekly/monthly spend per model, velocity ($/hour), and budget threshold alerts. Inspired by jarbas-app costs page.',
-    tag: 'feat',
-  },
-  {
-    section: 'planned',
-    title: 'Live model switcher',
-    desc: 'Dropdown to switch the active Hermes model without editing config files. Shows current model in header.',
-    tag: 'ux',
-  },
-  {
-    section: 'planned',
-    title: 'Multi-agent support: spawn and monitor agents',
-    desc: 'UI to spawn parallel Hermes agent instances (via tmux), monitor their status, and relay context between them.',
-    tag: 'idea',
-  },
-  {
-    section: 'planned',
-    title: 'Test Results page',
-    desc: 'Visual display of Ollama model benchmark results (instruction-following checks across multiple categories). Inspired by neo-app test bench.',
-    tag: 'feat',
-  },
-  {
-    section: 'planned',
-    title: 'Dark/light theme toggle',
-    desc: 'Allow users to switch between the current dark GitHub-style theme and a light variant.',
-    tag: 'ux',
-  },
-  {
-    section: 'planned',
-    title: 'Mobile-responsive layout',
-    desc: 'Sidebar collapses to a hamburger menu on small screens. Chat input remains usable on mobile.',
-    tag: 'ux',
-  },
-  {
-    section: 'planned',
-    title: 'Lessons Learned / Notes page',
-    desc: 'A simple markdown-based notes area for capturing agent interaction insights, post-mortems, and hard-won lessons.',
-    tag: 'idea',
-  },
+  { id:'DEV-003', section:'done', tag:'bug',
+    title:'diary.html and chat.html line-number corruption',
+    desc:'read_file() tool injected line-number prefixes into file content. Fixed using terminal cat.' },
+
+  { id:'DEV-004', section:'done', tag:'bug',
+    title:'chat.html JS crash: Math.round redacted by read_file',
+    desc:'read_file() redacted Math.round(totalChars) to Math.r...hars, silently crashing all JS.' },
+
+  { id:'DEV-005', section:'done', tag:'feat',
+    title:'Development Roadmap page (/dev.html)',
+    desc:'This page. Compact rows, DEV-NNN IDs, sections: Done / Active / Queued / Planned.' },
+
+  // ── ACTIVE ────────────────────────────────────────────────────────────────
+  { id:'DEV-006', section:'active', tag:'bug',
+    title:'Chat page: auto-scroll to latest message',
+    desc:'Messages panel does not scroll to bottom on new messages. scrollToBottom() logic added but needs verification after chat.html stabilises.' },
+
+  // ── QUEUED ────────────────────────────────────────────────────────────────
+  { id:'DEV-007', section:'queued', tag:'infra',
+    title:'Remove all hardcoded personal paths',
+    desc:'Audit files for /home/neo/ paths. Replace with configurable defaults for public release.' },
+
+  { id:'DEV-008', section:'queued', tag:'feat',
+    title:'Services page',
+    desc:'Show key systemd services (gateway, Ollama, Redis) with live status. Start/stop stretch goal.' },
+
+  { id:'DEV-009', section:'queued', tag:'ux',
+    title:'Sessions: origin tagging',
+    desc:'Visual badges showing whether session came from CLI, Telegram, Cron, or Web UI.' },
+
+  { id:'DEV-010', section:'queued', tag:'feat',
+    title:'Cron Jobs page: full implementation',
+    desc:'Currently stub. Implement create, pause, resume, run-now, delete via Hermes API.' },
+
+  { id:'DEV-011', section:'queued', tag:'feat',
+    title:'Skills page: full implementation',
+    desc:'Currently stub. List installed skills, enable/disable, browse skills hub.' },
+
+  { id:'DEV-012', section:'queued', tag:'feat',
+    title:'Config page: full implementation',
+    desc:'Currently stub. View and edit key config.yaml values from the browser.' },
+
+  { id:'DEV-013', section:'queued', tag:'infra',
+    title:'Set up proper git author identity',
+    desc:'Commits show "Neo Brainy <neo@neo...>" instead of Rui-Marcelino. Set git user.name and user.email.' },
+
+  // ── PLANNED ───────────────────────────────────────────────────────────────
+  { id:'DEV-014', section:'planned', tag:'feat',
+    title:'Cost tracking dashboard',
+    desc:'Daily/weekly/monthly spend per model, velocity ($/hr), budget threshold alerts.' },
+
+  { id:'DEV-015', section:'planned', tag:'ux',
+    title:'Live model switcher',
+    desc:'Dropdown to switch active Hermes model without editing config files.' },
+
+  { id:'DEV-016', section:'planned', tag:'idea',
+    title:'Multi-agent support: spawn and monitor agents',
+    desc:'UI to spawn parallel Hermes instances via tmux, monitor status, relay context.' },
+
+  { id:'DEV-017', section:'planned', tag:'feat',
+    title:'Test Results page',
+    desc:'Visual display of Ollama model benchmark results across instruction-following categories.' },
+
+  { id:'DEV-018', section:'planned', tag:'ux',
+    title:'Dark/light theme toggle',
+    desc:'Switch between dark GitHub-style theme and a light variant.' },
+
+  { id:'DEV-019', section:'planned', tag:'ux',
+    title:'Mobile-responsive layout',
+    desc:'Sidebar collapses on small screens. Chat input usable on mobile.' },
+
+  { id:'DEV-020', section:'planned', tag:'idea',
+    title:'Lessons Learned / Notes page',
+    desc:'Markdown-based notes area for agent interaction insights and post-mortems.' },
 ];
 
 // ── Render ────────────────────────────────────────────────────────────────────
-function tagLabel(tag) {
-  const map = {
-    bug:   'Bug Fix',
-    feat:  'Feature',
-    ux:    'UX',
-    infra: 'Infrastructure',
-    idea:  'Idea',
-  };
-  return map[tag] || tag;
-}
+const SECTIONS = [
+  { key:'done',    label:'Done',    dot:'s-done' },
+  { key:'active',  label:'Active',  dot:'s-active' },
+  { key:'queued',  label:'Queued',  dot:'s-queued' },
+  { key:'planned', label:'Planned', dot:'s-planned' },
+];
+const TAG_LABELS = { bug:'Bug', feat:'Feature', ux:'UX', infra:'Infra', idea:'Idea', docs:'Docs' };
 
-function renderSection(sectionId, items) {
-  const container = document.getElementById('list-' + sectionId);
-  if (!container) return;
-  container.innerHTML = '';
-  items.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = 'task-item';
-    div.innerHTML = `
-      <div class="task-num">#${i + 1}</div>
-      <div class="task-body">
-        <div class="task-title">${escHtml(item.title)}</div>
-        ${item.desc ? `<div class="task-desc">${escHtml(item.desc)}</div>` : ''}
-        <span class="task-tag tag-${item.tag}">${tagLabel(item.tag)}</span>
-      </div>`;
-    container.appendChild(div);
-  });
-}
-
-function escHtml(s) {
+function esc(s) {
   const d = document.createElement('div');
   d.textContent = String(s || '');
   return d.innerHTML;
 }
 
+function renderSection(sec) {
+  const items = ROADMAP.filter(i => i.section === sec.key);
+  const el = document.getElementById('sec-' + sec.key);
+  if (!el) return;
+
+  let html = `<div class="section-hdr">
+    <span class="s-dot ${sec.dot}"></span>
+    ${sec.label}
+    <span class="s-count">${items.length}</span>
+  </div>`;
+
+  if (items.length === 0) {
+    html += `<div style="font-size:11px;color:var(--dim);padding:4px 8px;">Nothing here yet.</div>`;
+  } else {
+    items.forEach(item => {
+      html += `<div class="item-row">
+        <span class="item-id">${esc(item.id)}</span>
+        <span class="item-title">${esc(item.title)}</span>
+        <span class="item-tag tag-${esc(item.tag)}">${TAG_LABELS[item.tag] || item.tag}</span>
+        ${item.desc ? `<span class="item-desc">${esc(item.desc)}</span>` : ''}
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
 function init() {
-  const ongoing = ROADMAP.filter(i => i.section === 'ongoing');
-  const queue   = ROADMAP.filter(i => i.section === 'queue');
-  const planned = ROADMAP.filter(i => i.section === 'planned');
+  SECTIONS.forEach(renderSection);
+  document.getElementById('total-pill').textContent = ROADMAP.length + ' items';
 
-  renderSection('ongoing', ongoing);
-  renderSection('queue',   queue);
-  renderSection('planned', planned);
-
-  const total = ROADMAP.length;
-  document.getElementById('total-count').textContent = total + ' items';
-
-  // Sidebar gateway status
   fetch('/api/status').then(r => r.json()).then(d => {
     const dot = document.querySelector('#sidebar-gw-status .dot');
     const txt = document.getElementById('sidebar-gw-text');
